@@ -1,1 +1,2 @@
 # Gym-Manager
+GymManager App – Aplicación móvil multiplataforma (Flutter + FastAPI + MongoDB) para la gestión de gimnasios con múltiples sedes, rutinas, y control de pagos. Incluye autenticación, roles de usuario y panel administrador.
