@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj": {}
+    "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj": {
+    "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
+        "projectUniqueName": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
         "projectName": "GyMApi",
-        "projectPath": "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
+        "projectPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
         "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\obj\\",
+        "outputPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zeL8ahLMBMk=",
+  "dgSpecHash": "8atMdRdRW2s=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Admin\\Source\\Repos\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
+  "projectFilePath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\bcrypt.net-next\\4.0.2\\bcrypt.net-next.4.0.2.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
@@ -39,7 +39,7 @@
       "code": "NU1902",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "El paquete \"System.IdentityModel.Tokens.Jwt\" 7.0.3 tiene una vulnerabilidad de gravedad moderada conocida, https://github.com/advisories/GHSA-59j7-ghrg-fj52",
+      "message": "Package 'System.IdentityModel.Tokens.Jwt' 7.0.3 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-59j7-ghrg-fj52",
       "libraryId": "System.IdentityModel.Tokens.Jwt",
       "targetGraphs": [
         "net8.0"
