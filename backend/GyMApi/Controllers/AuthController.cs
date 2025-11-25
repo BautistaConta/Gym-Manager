@@ -20,6 +20,7 @@ namespace GymManager.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+
             try
             {
                 var user = await _userService.RegisterAsync(request);
