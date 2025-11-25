@@ -16,7 +16,7 @@ class AuthService {
     return jsonDecode(response.body);
   }
   Future<Map<String, dynamic>> register(
-  String name,
+  String nombre,
   String email,
   String password,
 ) async {
@@ -24,7 +24,7 @@ class AuthService {
     Uri.parse(ApiConstants.baseUrl + ApiConstants.register),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({
-      "name": name,
+      "nombre": nombre,
       "email": email,
       "password": password,
     }),
