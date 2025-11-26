@@ -24,8 +24,7 @@ namespace GymManager.API.Services
 			{
 				new Claim(JwtRegisteredClaimNames.Sub, user.Id ?? string.Empty),
 				new Claim("nombre", user.Nombre ?? string.Empty),
-				new Claim("rol", user.Rol ?? string.Empty),
-				new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
+                new Claim(ClaimTypes.Role, user.Rol.ToString())
 			};
 
 			var token = new JwtSecurityToken(

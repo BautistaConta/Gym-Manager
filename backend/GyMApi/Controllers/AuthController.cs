@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GymManager.API.Models;
 using GymManager.API.Services;
+using GymApi.Models.Roles;
 
 namespace GymManager.API.Controllers
 {
@@ -23,7 +24,14 @@ namespace GymManager.API.Controllers
 
             try
             {
-                var user = await _userService.RegisterAsync(request);
+                RolUsuario rolAsignado;
+
+                if (request.Tipo?.ToLower() == "profesor")
+                    rolAsignado = RolUsuario.Profesor;
+                else
+                    rolAsignado = RolUsuario.Alumno;
+
+                var user = await _userService.RegisterAsync(request,rolAsignado);
                 var token = _jwtService.GenerateToken(user);
                 return Ok(new { token });
             }

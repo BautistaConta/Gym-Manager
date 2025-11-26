@@ -1,3 +1,4 @@
+using GymApi.Models.Roles;
 using GymManager.API.Models;
 using GymManager.API.Repositories;
 
@@ -12,7 +13,7 @@ namespace GymManager.API.Services
             _repo = repo;
         }
 
-        public async Task<Usuario> RegisterAsync(RegisterRequest request)
+        public async Task<Usuario> RegisterAsync(RegisterRequest request,RolUsuario rol)
         {
             var existing = await _repo.GetByEmailAsync(request.Email);
             if (existing != null)
@@ -23,7 +24,7 @@ namespace GymManager.API.Services
                 Nombre = request.Nombre,
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Rol = request.Rol
+                Rol = rol
             };
 
             await _repo.CreateAsync(user);
