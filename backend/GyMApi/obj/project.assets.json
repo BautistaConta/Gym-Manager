@@ -1387,11 +1387,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Admin\\source\\repos\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
+      "projectUniqueName": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
       "projectName": "GymApi",
-      "projectPath": "C:\\Users\\Admin\\source\\repos\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
+      "projectPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
       "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Admin\\source\\repos\\Gym-Manager\\backend\\GyMApi\\obj\\",
+      "outputPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1479,7 +1479,7 @@
       "code": "NU1603",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "GymApi depende de System.IdentityModel.Tokens.Jwt (>= 7.0.5), pero no se encontró System.IdentityModel.Tokens.Jwt 7.0.5. Se resolvió una mejor coincidencia aproximada de System.IdentityModel.Tokens.Jwt 7.1.2.",
+      "message": "GymApi depends on System.IdentityModel.Tokens.Jwt (>= 7.0.5) but System.IdentityModel.Tokens.Jwt 7.0.5 was not found. An approximate best match of System.IdentityModel.Tokens.Jwt 7.1.2 was resolved.",
       "libraryId": "System.IdentityModel.Tokens.Jwt",
       "targetGraphs": [
         "net8.0"
