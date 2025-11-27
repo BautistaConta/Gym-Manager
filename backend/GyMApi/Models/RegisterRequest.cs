@@ -5,6 +5,6 @@ namespace GymManager.API.Models
         public required string Nombre { get; set; }
         public required string Email { get; set; }
         public required string Password { get; set; }
-        public string Rol { get; set; } = "alumno";
+        public string? Tipo { get; set; }
     }
 }

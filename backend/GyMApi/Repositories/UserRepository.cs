@@ -25,5 +25,10 @@ namespace GymManager.API.Repositories
 
         public async Task<List<Usuario>> GetAllAsync() =>
             await _usuarios.Find(_ => true).ToListAsync();
+        public async Task UpdateAsync(Usuario user)
+        {
+            var filter = Builders<Usuario>.Filter.Eq(u => u.Id, user.Id);
+            await _usuarios.ReplaceOneAsync(filter, user);
+        }
     }
 }

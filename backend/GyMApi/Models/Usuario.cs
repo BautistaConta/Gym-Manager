@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using GymApi.Models.Roles;
 
 namespace GymManager.API.Models
 {
@@ -19,7 +20,7 @@ namespace GymManager.API.Models
         public string PasswordHash { get; set; }
 
         [BsonElement("rol")]
-        public string Rol { get; set; } = "alumno";
+        public RolUsuario Rol { get; set; } = RolUsuario.Alumno;
 
         [BsonElement("fechaAlta")]
         public DateTime FechaAlta { get; set; } = DateTime.UtcNow;

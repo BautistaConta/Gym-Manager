@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using GymManager.API.Repositories;
 using GymManager.API.Models;
+using GymManager.API.DTOs;
+using GymApi.Models.Roles;
 
 namespace GymManager.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/users")]
     public class UsersController : ControllerBase
     {
         private readonly UserRepository _repo;
@@ -16,26 +18,100 @@ namespace GymManager.API.Controllers
             _repo = repo;
         }
 
+        
+        //GET api/users/me
         [HttpGet("me")]
         [Authorize]
-        public async Task<IActionResult> Me()
+        public async Task<IActionResult> ObtenerUsuarioActual()
         {
             var userId = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
             var user = await _repo.GetByIdAsync(userId);
             if (user == null) return NotFound();
-            return Ok(new { user.Id, user.Nombre, user.Email, user.Rol, user.FechaAlta });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Nombre,
+                user.Email,
+                Rol = user.Rol.ToString(),
+                user.FechaAlta
+            });
         }
 
+        
+        // GET api/users
         [HttpGet]
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _repo.GetAllAsync();
-            var response = users.Select(u => new { u.Id, u.Nombre, u.Email, u.Rol, u.FechaAlta });
+
+            var response = users.Select(u => new
+            {
+                u.Id,
+                u.Nombre,
+                u.Email,
+                Rol = u.Rol.ToString(),
+                u.FechaAlta
+            });
+
             return Ok(response);
+        }
+
+        
+        // PUT api/users/{id}/rol
+        [HttpPut("{id}/rol")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CambiarRol(string id, [FromBody] UpdateRolRequest request)
+        {
+            var user = await _repo.GetByIdAsync(id);
+            if (user == null)
+                return NotFound(new { message = "Usuario no encontrado" });
+
+            user.Rol = request.NuevoRol;
+            await _repo.UpdateAsync(user);
+
+            return Ok(new
+            {
+                message = "Rol actualizado correctamente",
+                nuevoRol = user.Rol.ToString()
+            });
+        }
+
+        
+        // POST api/users/crear-empleado
+        [HttpPost("crear-empleado")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CrearEmpleado([FromBody] CrearEmpleadoRequest request)
+        {
+            if (!Enum.TryParse<RolUsuario>(request.Rol, true, out var rol)
+                || (rol != RolUsuario.Gestor && rol != RolUsuario.Profesor))
+            {
+                return BadRequest("Solo se pueden crear Gestores o Profesores");
+            }
+
+            var usuario = new Usuario
+            {
+                Nombre = request.Nombre,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                Rol = rol,
+                FechaAlta = DateTime.UtcNow
+            };
+
+            await _repo.CreateAsync(usuario);
+
+            return Ok(new
+            {
+                message = "Empleado creado correctamente",
+                usuario.Id,
+                usuario.Email,
+                Rol = usuario.Rol.ToString()
+            });
         }
     }
 }
