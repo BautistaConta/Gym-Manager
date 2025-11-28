@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
+import '../../routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,9 +27,25 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => loading = false);
 
     if (response['token'] != null) {
+      final String rol = response['user']['rol'];
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login exitoso ✅')),
       );
+
+      switch (rol) {
+        case 'Admin':
+        case 'Gestor':
+        case 'Profesor':
+        case 'Alumno':
+          Navigator.pushReplacementNamed(context, AppRoutes.home) ;
+          break;
+
+        default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rol no reconocido: $rol')),
+          );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al iniciar sesión')),
@@ -60,11 +77,11 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: handleLogin,
                     child: const Text("Iniciar sesión"),
                   ),
-         TextButton(
-      onPressed: () {
-      Navigator.pushNamed(context, '/register');
-     },
-        child: const Text("¿No tenés cuenta? Registrate"),
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.register);
+              },
+              child: const Text("¿No tenés cuenta? Registrate"),
             ),
           ],
         ),
