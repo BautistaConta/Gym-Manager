@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "B4M5bZwXPyU=",
+  "dgSpecHash": "S1326L/4VRs=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
+  "projectFilePath": "C:\\Users\\Admin\\source\\repos\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Admin\\.nuget\\packages\\bcrypt.net-next\\4.0.2\\bcrypt.net-next.4.0.2.nupkg.sha512",
     "C:\\Users\\Admin\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
@@ -39,7 +39,7 @@
       "code": "NU1603",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "GymApi depends on System.IdentityModel.Tokens.Jwt (>= 7.0.5) but System.IdentityModel.Tokens.Jwt 7.0.5 was not found. An approximate best match of System.IdentityModel.Tokens.Jwt 7.1.2 was resolved.",
+      "message": "GymApi depende de System.IdentityModel.Tokens.Jwt (>= 7.0.5), pero no se encontró System.IdentityModel.Tokens.Jwt 7.0.5. Se resolvió una mejor coincidencia aproximada de System.IdentityModel.Tokens.Jwt 7.1.2.",
       "libraryId": "System.IdentityModel.Tokens.Jwt",
       "targetGraphs": [
         "net8.0"
