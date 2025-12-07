@@ -48,7 +48,17 @@ namespace GymManager.API.Controllers
             {
                 var user = await _userService.LoginAsync(request);
                 var token = _jwtService.GenerateToken(user);
-                return Ok(new { token });
+                return Ok(new
+                {
+                    token,
+                    user = new
+                    {
+                        id = user.Id,
+                        nombre = user.Nombre,
+                        email = user.Email,
+                        rol = user.Rol.ToString()
+                    }
+                });
             }
             catch (Exception ex)
             {
