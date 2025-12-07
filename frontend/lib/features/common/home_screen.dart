@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -86,7 +87,7 @@ class HomeScreen extends StatelessWidget {
 
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/gestion-usuarios');
+                Navigator.pushNamed(context, AppRoutes.gestionUsuarios);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.greenAccent,

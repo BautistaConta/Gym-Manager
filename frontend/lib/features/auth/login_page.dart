@@ -27,30 +27,21 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => loading = false);
 
     if (response['token'] != null) {
-      final String rol = response['user']['rol'];
+  final user = response['user'] ?? {};
+  final rol = user['rol'] ?? 'Desconocido';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login exitoso ✅')),
-      );
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Login exitoso ✅')),
+  );
 
-      switch (rol) {
-        case 'Admin':
-        case 'Gestor':
-        case 'Profesor':
-        case 'Alumno':
-          Navigator.pushReplacementNamed(context, AppRoutes.home) ;
-          break;
-
-        default:
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Rol no reconocido: $rol')),
-          );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al iniciar sesión')),
-      );
-    }
+  // Independiente del rol → va al Home común
+  Navigator.pushReplacementNamed(context, AppRoutes.home);
+  
+} else {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Error al iniciar sesión')),
+  );
+}
   }
 
   @override
