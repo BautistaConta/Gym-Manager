@@ -19,7 +19,11 @@ class AuthService {
   Future<String?> getToken() async {
     return _storage.read(key: _tokenKey);
   }
-
+Future<UserModel?> getStoredUser() async {
+  final userData = await _storage.read(key: _userKey);
+  if (userData == null) return null;
+  return UserModel.fromJson(jsonDecode(userData));
+}
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userKey);
