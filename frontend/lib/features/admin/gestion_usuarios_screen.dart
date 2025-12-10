@@ -79,14 +79,7 @@ class _GestionUsuariosScreenState extends ConsumerState<GestionUsuariosScreen> {
     }
 
     // Protección extra: solo admin
-    final rol = authState.user?.rol ?? Rol.unknown;
-    if (rol != Rol.admin) {
-      return const Scaffold(
-        body: Center(child: Text('Acceso denegado. Requiere rol Admin.')),
-      );
-    }
-
-    return Scaffold(
+     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Usuarios'),
         actions: [

@@ -5,57 +5,80 @@ import '../../core/constants/api_constants.dart';
 import '../../models/user_model.dart';
 
 class AuthService {
-  final _storage = const FlutterSecureStorage();
-  static const _tokenKey = 'jwt_token';
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static const String _tokenKey = 'jwt_token';
+  static const String _userKey = 'user_data';
 
-  // 🔹 Guardar token
+  // -------------------------------
+  // TOKEN STORAGE
+  // -------------------------------
   Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);
   }
 
-  // 🔹 Obtener token
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    return _storage.read(key: _tokenKey);
   }
 
-  // 🔹 Borrar token (logout)
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _userKey);
   }
 
-  // 🔥 LOGIN CORRECTO + GUARDA TOKEN !!!
+  // -------------------------------
+  // LOGIN
+  // -------------------------------
   Future<Map<String, dynamic>> login(String email, String password) async {
+    final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.login);
+
     final response = await http.post(
-      Uri.parse(ApiConstants.baseUrl + ApiConstants.login),
+      url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": email,
         "password": password,
       }),
     );
-     print("📥 Status login: ${response.statusCode}");
-     print("📥 Body login: ${response.body}");
-    final data = jsonDecode(response.body);
-     
 
-    // Si el backend responde con token → guardarlo
-    if (response.statusCode == 200 && data['token'] != null) {
-      await saveToken(data['token']);
+    print("📥 Status login: ${response.statusCode}");
+    print("📥 Body login: ${response.body}");
+
+    // Manejo de errores HTTP
+    if (response.statusCode != 200) {
+      throw Exception("Error en login: ${response.body}");
     }
-    if (data['token'] != null) {
-    print("🔐 Token recibido: ${data['token']}");}
-    print(data);
+
+    final Map<String, dynamic> data = jsonDecode(response.body);
+
+    // Validación de token
+    final token = data['token'];
+    if (token == null || token is! String || token.isEmpty) {
+      throw Exception("Token inválido o no recibido del backend.");
+    }
+
+    print("🔐 Token recibido: $token");
+    await saveToken(token);
+
+    // Store user
+    if (data['user'] != null) {
+      await _storage.write(
+        key: _userKey,
+        value: jsonEncode(data['user']),
+      );
+    }
+
     return data;
   }
 
-  // 🔥 REGISTER (sin cambios)
+  // -------------------------------
+  // REGISTER
+  // -------------------------------
   Future<Map<String, dynamic>> register(
-    String nombre,
-    String email,
-    String password,
-  ) async {
+      String nombre, String email, String password) async {
+    final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.register);
+
     final response = await http.post(
-      Uri.parse(ApiConstants.baseUrl + ApiConstants.register),
+      url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "nombre": nombre,
@@ -67,26 +90,43 @@ class AuthService {
     return jsonDecode(response.body);
   }
 
-  // 🔥 ME (perfil actual)
+  // -------------------------------
+  // GET CURRENT USER (/me)
+  // -------------------------------
   Future<UserModel?> fetchCurrentUser() async {
     final token = await getToken();
-    if (token == null) return null;
+    if (token == null) {
+      print("⚠️ No hay token almacenado, usuario no logueado.");
+      return null;
+    }
+
+    final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.me);
 
     final response = await http.get(
-      Uri.parse(ApiConstants.baseUrl + ApiConstants.me),
+      url,
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",
       },
     );
 
+    print("📥 Status ME: ${response.statusCode}");
+    print("📥 Body ME: ${response.body}");
+
     if (response.statusCode == 200) {
       try {
-        final body = jsonDecode(response.body);
-        return UserModel.fromJson(body);
-      } catch (_) {
+        final data = jsonDecode(response.body);
+        return UserModel.fromJson(data);
+      } catch (e) {
+        print("❌ Error parseando usuario: $e");
         return null;
       }
+    }
+
+    // Token expirado o inválido → limpiar storage
+    if (response.statusCode == 401) {
+      print("⚠️ Token inválido o expirado, limpiando sesión.");
+      await deleteToken();
     }
 
     return null;

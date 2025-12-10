@@ -9,13 +9,15 @@ class UsersService {
 
   Future<List<UserModel>> fetchAllUsers() async {
     final token = await _authService.getToken();
+    print("🔐 Usando token: $token");
     final response = await http.get(
       Uri.parse(ApiConstants.baseUrl + ApiConstants.users),
       headers: {
         "Content-Type": "application/json",
-        if (token != null) "Authorization": "Bearer $token",
+        "Authorization": "Bearer $token",
       },
     );
+    print("Respuesta de getALlusers: ${response.statusCode} - ${response.body}");
 
     if (response.statusCode == 200) {
       final List<dynamic> body = jsonDecode(response.body);
