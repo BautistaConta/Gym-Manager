@@ -4,6 +4,8 @@ using GymManager.API.Repositories;
 using GymManager.API.Models;
 using GymManager.API.DTOs;
 using GymApi.Models.Roles;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace GymManager.API.Controllers
 {
@@ -24,7 +26,8 @@ namespace GymManager.API.Controllers
         [Authorize]
         public async Task<IActionResult> ObtenerUsuarioActual()
         {
-            var userId = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+           var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+             ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
@@ -45,7 +48,7 @@ namespace GymManager.API.Controllers
         
         // GET api/users
         [HttpGet]
-        // [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var rawToken = Request.Headers["Authorization"].ToString();
@@ -67,7 +70,7 @@ Console.WriteLine("TOKEN RECIBIDO POR .NET: " + rawToken);
         
         // PUT api/users/{id}/rol
         [HttpPut("{id}/rol")]
-        // [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CambiarRol(string id, [FromBody] UpdateRolRequest request)
         {
             var user = await _repo.GetByIdAsync(id);
@@ -87,7 +90,7 @@ Console.WriteLine("TOKEN RECIBIDO POR .NET: " + rawToken);
         
         // POST api/users/crear-empleado
         [HttpPost("crear-empleado")]
-        // [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CrearEmpleado([FromBody] CrearEmpleadoRequest request)
         {
             if (!Enum.TryParse<RolUsuario>(request.Rol, true, out var rol)

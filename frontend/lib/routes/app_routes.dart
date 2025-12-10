@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/auth/login_page.dart';
 import '../features/auth/register_page.dart';
 import '../features/common/home_screen.dart';
-import '../features/admin/gestion_usuarios_screen.dart';
+import '../features/Admin/gestion_usuarios_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';

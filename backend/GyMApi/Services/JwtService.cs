@@ -23,7 +23,8 @@ namespace GymManager.API.Services
 			var claims = new[]
 			{
 				new Claim(JwtRegisteredClaimNames.Sub, user.Id ?? string.Empty),
-				new Claim("nombre", user.Nombre ?? string.Empty),
+                new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
+                new Claim("nombre", user.Nombre ?? string.Empty),
                 new Claim(ClaimTypes.Role, user.Rol.ToString())
 			};
 
