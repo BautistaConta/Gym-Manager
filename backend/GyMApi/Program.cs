@@ -45,9 +45,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            RoleClaimType=ClaimTypes.Role,
             ValidIssuer = issuer,
             ValidAudience = audience,
+            RoleClaimType=ClaimTypes.Role,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
         };
     });

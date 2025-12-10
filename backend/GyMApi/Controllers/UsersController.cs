@@ -45,7 +45,8 @@ namespace GymManager.API.Controllers
         
         // GET api/users
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [AllowAnonymous]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _repo.GetAllAsync();

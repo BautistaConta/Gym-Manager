@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GyMApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+860da381da35a64b9518e70a20d3a9b81f0a1387")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6875efc783b8ad5dc594c9227e65087596cb29d0")]
 [assembly: System.Reflection.AssemblyProductAttribute("GyMApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GyMApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
