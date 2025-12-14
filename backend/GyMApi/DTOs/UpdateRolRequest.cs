@@ -5,6 +5,6 @@ namespace GymManager.API.DTOs
 {
     public class UpdateRolRequest
     {
-        public RolUsuario NuevoRol { get; set; }
+        public string NuevoRol { get; set; } =string.Empty;
     }
 }

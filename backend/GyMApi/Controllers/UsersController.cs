@@ -73,18 +73,23 @@ Console.WriteLine("TOKEN RECIBIDO POR .NET: " + rawToken);
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CambiarRol(string id, [FromBody] UpdateRolRequest request)
         {
-            var user = await _repo.GetByIdAsync(id);
-            if (user == null)
-                return NotFound(new { message = "Usuario no encontrado" });
+           if (!Enum.TryParse<RolUsuario>(request.NuevoRol, true, out var nuevoRol))
+    {
+        return BadRequest("Rol inválido");
+    }
 
-            user.Rol = request.NuevoRol;
-            await _repo.UpdateAsync(user);
+    var user = await _repo.GetByIdAsync(id);
+    if (user == null)
+        return NotFound(new { message = "Usuario no encontrado" });
 
-            return Ok(new
-            {
-                message = "Rol actualizado correctamente",
-                nuevoRol = user.Rol.ToString()
-            });
+    user.Rol = nuevoRol;
+    await _repo.UpdateAsync(user);
+
+    return Ok(new
+    {
+        message = "Rol actualizado correctamente",
+        nuevoRol = user.Rol.ToString()
+    });
         }
 
         

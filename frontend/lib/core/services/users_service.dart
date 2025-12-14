@@ -37,7 +37,7 @@ class UsersService {
         "Content-Type": "application/json",
         if (token != null) "Authorization": "Bearer $token",
       },
-      body: jsonEncode({"rol": newRol}),
+      body: jsonEncode({"nuevoRol": newRol}),
     );
 
     if (response.statusCode == 200) {
