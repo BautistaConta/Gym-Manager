@@ -25,7 +25,7 @@ class DarkTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey),
-        prefixIcon: Icon(icon, color: Colors.greenAccent),
+        prefixIcon: Icon(icon, color:Color.fromARGB(255, 27, 232, 48)),
         suffixIcon: suffix,
         filled: true,
         fillColor: const Color(0xFF1A1A1A),
@@ -35,7 +35,7 @@ class DarkTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.greenAccent),
+          borderSide: const BorderSide(color: Color.fromARGB(255, 27, 232, 48)),
         ),
       ),
     );

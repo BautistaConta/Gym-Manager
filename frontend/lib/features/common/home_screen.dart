@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/dashboard_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -7,104 +8,106 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F0F),
-        elevation: 0,
-        title: const Text(
-          'Gym Manager',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        centerTitle: true,
+        title: const Text('Gym Manager'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-
-            const Text(
-              'Bienvenido 👋',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
             const SizedBox(height: 10),
 
-            const Text(
-              'Panel principal del sistema',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
+            Text(
+              'Bienvenido',
+              style: Theme.of(context).textTheme.headlineLarge,
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 6),
 
+            Text(
+              'Panel principal del sistema',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.grey),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Estado del sistema
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF111111),
+                color: const Color(0xFF1A1A1A),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.greenAccent,
+                  color: Theme.of(context).colorScheme.primary,
                   width: 1.5,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Estado del sistema',
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Todo funcionando correctamente ✅',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
+                  const SizedBox(height: 8),
+                  const Text('Todo funcionando correctamente'),
                 ],
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
 
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.gestionUsuarios);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.greenAccent,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'Gestión de usuarios',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            // GRID DASHBOARD
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1,
+                children: [
+                  DashboardCard(
+                    icon: Icons.people_outline,
+                    title: 'Gestión de usuarios',
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.gestionUsuarios,
+                      );
+                    },
                   ),
-                ),
+
+                  DashboardCard(
+                    icon: Icons.fitness_center,
+                    title: 'Clases',
+                    onTap: () {
+                      // futura pantalla
+                    },
+                  ),
+
+                  DashboardCard(
+                    icon: Icons.payment,
+                    title: 'Pagos',
+                    onTap: () {
+                      // futura pantalla
+                    },
+                  ),
+
+                  DashboardCard(
+                    icon: Icons.settings,
+                    title: 'Configuración',
+                    onTap: () {
+                      // futura pantalla
+                    },
+                  ),
+                ],
               ),
             ),
           ],

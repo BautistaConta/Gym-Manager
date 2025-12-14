@@ -47,10 +47,9 @@ class _LoginPageState extends State<LoginPage> {
 }
   }
 
-  @override
+ @override
 Widget build(BuildContext context) {
   return Scaffold(
-    backgroundColor: Colors.black,
     body: Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -59,15 +58,10 @@ Widget build(BuildContext context) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'GYM MANAGER',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+                style: Theme.of(context).textTheme.headlineLarge,
               ),
               const SizedBox(height: 40),
 
@@ -88,7 +82,6 @@ Widget build(BuildContext context) {
                     showPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.greenAccent,
                   ),
                   onPressed: () {
                     setState(() => showPassword = !showPassword);
@@ -99,28 +92,11 @@ Widget build(BuildContext context) {
 
               loading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.greenAccent,
-                      ),
+                      child: CircularProgressIndicator(),
                     )
                   : ElevatedButton(
                       onPressed: handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'INICIAR SESIÓN',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      child: const Text('INICIAR SESIÓN'),
                     ),
 
               const SizedBox(height: 16),
@@ -129,13 +105,7 @@ Widget build(BuildContext context) {
                 onPressed: () {
                   Navigator.pushNamed(context, AppRoutes.register);
                 },
-                child: const Text(
-                  '¿No tenés cuenta? Registrate',
-                  style: TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 14,
-                  ),
-                ),
+                child: const Text('¿No tenés cuenta? Registrate'),
               ),
             ],
           ),

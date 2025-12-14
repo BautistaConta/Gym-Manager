@@ -54,7 +54,6 @@ class _RegisterPageState extends State<RegisterPage> {
  @override
 Widget build(BuildContext context) {
   return Scaffold(
-    backgroundColor: Colors.black,
     body: Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -63,15 +62,10 @@ Widget build(BuildContext context) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'CREAR CUENTA',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+                style: Theme.of(context).textTheme.headlineLarge,
               ),
               const SizedBox(height: 40),
 
@@ -99,7 +93,6 @@ Widget build(BuildContext context) {
                     showPassword
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.greenAccent,
                   ),
                   onPressed: () {
                     setState(() => showPassword = !showPassword);
@@ -110,38 +103,18 @@ Widget build(BuildContext context) {
 
               loading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.greenAccent,
-                      ),
+                      child: CircularProgressIndicator(),
                     )
                   : ElevatedButton(
                       onPressed: handleRegister,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.greenAccent,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'REGISTRARSE',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                      child: const Text('REGISTRARSE'),
                     ),
 
               const SizedBox(height: 16),
 
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  '¿Ya tenés cuenta? Iniciá sesión',
-                  style: TextStyle(color: Colors.greenAccent),
-                ),
+                child: const Text('¿Ya tenés cuenta? Iniciá sesión'),
               ),
             ],
           ),

@@ -71,42 +71,63 @@ class _GestionUsuariosScreenState extends ConsumerState<GestionUsuariosScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+Widget build(BuildContext context) {
+  final authState = ref.watch(authProvider);
 
-    if (authState.loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    // Protección extra: solo admin
-     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestión de Usuarios'),
-        actions: [
-          IconButton(
-            onPressed: _loadUsers,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refrescar',
-          ),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Text('Error: $error'))
-              : RefreshIndicator(
-                  onRefresh: _loadUsers,
-                  child: ListView.builder(
-                    itemCount: users.length,
-                    itemBuilder: (context, i) {
-                      final u = users[i];
-                      return UserCard(
-                        user: u,
-                        onChangeRol: (newRole) => _onChangeRol(u.id, newRole),
-                      );
-                    },
-                  ),
-                ),
+  if (authState.loading) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
+
+  // Protección extra: solo admin 
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Gestión de Usuarios'),
+      actions: [
+        IconButton(
+          onPressed: _loadUsers,
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refrescar',
+        ),
+      ],
+    ),
+    body: loading
+        ? const Center(
+            child: CircularProgressIndicator(),
+          )
+        : error != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'Error: $error',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: Colors.redAccent),
+                  ),
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _loadUsers,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: users.length,
+                  itemBuilder: (context, i) {
+                    final u = users[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UserCard(
+                        user: u,
+                        onChangeRol: (newRole) =>
+                            _onChangeRol(u.id, newRole),
+                      ),
+                    );
+                  },
+                ),
+              ),
+  );
+}
 }
