@@ -6,6 +6,7 @@ using GymManager.API.DTOs;
 using GymApi.Models.Roles;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using GymManager.API.Services;
 
 namespace GymManager.API.Controllers
 {
@@ -14,10 +15,11 @@ namespace GymManager.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserRepository _repo;
-
-        public UsersController(UserRepository repo)
+        private readonly UserService _userService;
+        public UsersController(UserRepository repo, UserService userService)
         {
             _repo = repo;
+            _userService = userService;
         }
 
         
@@ -95,36 +97,29 @@ Console.WriteLine("TOKEN RECIBIDO POR .NET: " + rawToken);
         
         // POST api/users/crear-empleado
         [HttpPost("crear-empleado")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CrearEmpleado([FromBody] CrearEmpleadoRequest request)
+        [Authorize(Roles = "Admin,Gestor")]
+        public async Task<IActionResult> CrearUsuario([FromBody] CrearUsuarioRequest request)
+{
+    try
+    {
+        var usuario = await _userService.CrearUsuarioAsync(request);
+
+        return Ok(new
         {
-            if (!Enum.TryParse<RolUsuario>(request.Rol, true, out var rol)
-                || (rol != RolUsuario.Gestor && rol != RolUsuario.Profesor))
-            {
-                return BadRequest("Solo se pueden crear Gestores o Profesores");
-            }
+            message = "Usuario creado correctamente",
+            usuario.Id,
+            usuario.Email,
+            Rol = usuario.Rol.ToString()
+        });
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
+}
 
-            var usuario = new Usuario
-            {
-                Nombre = request.Nombre,
-                Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Rol = rol,
-                FechaAlta = DateTime.UtcNow
-            };
-
-            await _repo.CreateAsync(usuario);
-
-            return Ok(new
-            {
-                message = "Empleado creado correctamente",
-                usuario.Id,
-                usuario.Email,
-                Rol = usuario.Rol.ToString()
-            });
-        }
         [HttpPost("seed-admin")]
-[AllowAnonymous]
+        [AllowAnonymous]
 public async Task<IActionResult> SeedAdmin()
 {
     var existing = await _repo.GetByEmailAsync("admin@seed.com");

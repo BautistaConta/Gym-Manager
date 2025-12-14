@@ -1,6 +1,7 @@
 using GymApi.Models.Roles;
 using GymManager.API.Models;
 using GymManager.API.Repositories;
+using GymManager.API.DTOs;
 
 namespace GymManager.API.Services
 {
@@ -17,7 +18,7 @@ namespace GymManager.API.Services
         {
             var existing = await _repo.GetByEmailAsync(request.Email);
             if (existing != null)
-                throw new Exception("El email ya está registrado.");
+                throw new Exception("El email ya estï¿½ registrado.");
 
             var user = new Usuario
             {
@@ -35,9 +36,31 @@ namespace GymManager.API.Services
         {
             var user = await _repo.GetByEmailAsync(request.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                throw new Exception("Credenciales inválidas.");
+                throw new Exception("Credenciales invï¿½lidas.");
 
             return user;
         }
+        public async Task<Usuario> CrearUsuarioAsync(CrearUsuarioRequest request)
+{
+    if (!Enum.TryParse<RolUsuario>(request.Rol, true, out var rol))
+        throw new Exception("Rol invÃ¡lido");
+
+    var existing = await _repo.GetByEmailAsync(request.Email);
+    if (existing != null)
+        throw new Exception("El email ya estÃ¡ registrado.");
+
+    var usuario = new Usuario
+    {
+        Nombre = request.Nombre,
+        Email = request.Email,
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+        Rol = rol,
+        FechaAlta = DateTime.UtcNow
+    };
+
+    await _repo.CreateAsync(usuario);
+    return usuario;
+}
+
     }
 }
