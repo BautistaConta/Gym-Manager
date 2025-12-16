@@ -21,6 +21,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddSingleton<UserRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<SucursalRepository>();
 
 // CORS - permitir el frontend (cambia origen si es necesario)
 builder.Services.AddCors(options =>
