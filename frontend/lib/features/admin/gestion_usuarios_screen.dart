@@ -4,6 +4,7 @@ import '../../core/services/users_service.dart';
 import '../../models/user_model.dart';
 import '../../models/rol_enum.dart';
 import '../../widgets/user_card.dart';
+import '../../widgets/modals/create_user_modal.dart';
 import '../../core/providers/auth_provider.dart';
 
 class GestionUsuariosScreen extends ConsumerStatefulWidget {
@@ -90,6 +91,20 @@ Widget build(BuildContext context) {
           icon: const Icon(Icons.refresh),
           tooltip: 'Refrescar',
         ),
+         IconButton(
+      icon: const Icon(Icons.person_add),
+      tooltip: 'Crear usuario',
+      onPressed: () async {
+        final created = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const CreateUserModal(),
+        );
+
+        if (created == true) {
+          _loadUsers();};
+      }
+      ),
       ],
     ),
     body: loading

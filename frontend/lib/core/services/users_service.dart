@@ -46,6 +46,39 @@ class UsersService {
       return false;
     }
   }
+  
+  Future<void> createUser({
+  required String nombre,
+  required String email,
+  required String password,
+  required String rol,
+}) async {
+  final url = Uri.parse(
+    ApiConstants.baseUrl + ApiConstants.crearEmpleado,
+  );
+
+  final token = await _authService.getToken();
+
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode({
+      'nombre': nombre,
+      'email': email,
+      'password': password,
+      'rol': rol,
+    }),
+  );
+
+  if (response.statusCode != 200) {
+    final body = jsonDecode(response.body);
+    throw Exception(body['message'] ?? 'Error al crear usuario');
+  }
+}
+
 }
 
 class HttpException implements Exception {
