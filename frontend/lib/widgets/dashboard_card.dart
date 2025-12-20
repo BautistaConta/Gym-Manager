@@ -20,7 +20,7 @@ class DashboardCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 57, 57, 57),
+          color: Colors.grey,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: AppTheme.primaryGreen,
