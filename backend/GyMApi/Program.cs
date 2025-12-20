@@ -20,6 +20,8 @@ builder.Services.AddSwaggerGen(c =>
 // Registraciones
 builder.Services.AddSingleton<UserRepository>();
 // builder.Services.AddSingleton<SucursalRepository>();
+builder.Services.AddSingleton<CategoriaPagoRepository>();
+
 builder.Services.AddScoped<UserService>();
 builder.Services.AddSingleton<JwtService>();
 
