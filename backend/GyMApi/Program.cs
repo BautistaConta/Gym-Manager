@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
+using MongoDB.Driver;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,10 +17,22 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gym API", Version = "v1" });
 });
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    return new MongoClient(configuration.GetConnectionString("MongoDB"));
+});
 
+builder.Services.AddSingleton<IMongoDatabase>(sp =>
+{
+    var client = sp.GetRequiredService<IMongoClient>();
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    return client.GetDatabase(configuration["MongoDB:Database"]);
+});
 // Registraciones
 builder.Services.AddSingleton<UserRepository>();
-// builder.Services.AddSingleton<SucursalRepository>();
+builder.Services.AddSingleton<SucursalRepository>();
+builder.Services.AddSingleton<CategoriaPagoRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddSingleton<JwtService>();
 

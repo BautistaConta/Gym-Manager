@@ -12,7 +12,7 @@ namespace GymManager.API.Controllers
 {
 [ApiController]
 [Route("api/sucursales")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Gestor")]
 public class SucursalesController : ControllerBase
 {
     private readonly SucursalRepository _repo;
@@ -42,5 +42,15 @@ public class SucursalesController : ControllerBase
     {
         return Ok(await _repo.GetAllAsync());
     }
+    [HttpGet("{id}")]
+public async Task<IActionResult> GetById(string id)
+{
+    var sucursal = await _repo.GetByIdAsync(id);
+
+    if (sucursal == null)
+        return NotFound();
+
+    return Ok(sucursal);
+}
 }
 }
