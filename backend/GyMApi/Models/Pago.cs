@@ -6,9 +6,7 @@ public class Pago
     public string UsuarioId { get; set; } = null!;
     public string SucursalId { get; set; } = null!;
     public string CategoriaPagoId { get; set; } = null!;
-    public decimal PrecioBase { get; set; }
     public decimal DescuentoPorcentaje { get; set; }
-    public decimal MontoFinal { get; set; }
     public MetodoPago MetodoPago { get; set; }
     public DateTime FechaPago { get; set; }
     public DateTime PeriodoDesde { get; set; }

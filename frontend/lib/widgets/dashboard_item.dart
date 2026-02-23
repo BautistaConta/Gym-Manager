@@ -10,6 +10,12 @@ final dashboardItems = [
     route: AppRoutes.gestionUsuarios,
     allowedRoles: [Rol.admin, Rol.gestor],
   ),
+  DashboardItem(
+  title: 'Sucursales',
+  icon: Icons.store,
+  route: AppRoutes.gestionSucursales,
+  allowedRoles: [Rol.admin, Rol.gestor],
+),
   // DashboardItem(
   //   title: 'Clases',
   //   icon: Icons.fitness_center,

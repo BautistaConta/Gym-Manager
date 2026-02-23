@@ -17,17 +17,29 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gym API", Version = "v1" });
 });
+
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    return new MongoClient(configuration.GetConnectionString("MongoDB"));
+    var connectionString = configuration["MongoDB:ConnectionString"];
+
+    if (string.IsNullOrEmpty(connectionString))
+        throw new Exception("MongoDB connection string no configurada");
+
+    return new MongoClient(connectionString);
 });
 
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
 {
     var client = sp.GetRequiredService<IMongoClient>();
     var configuration = sp.GetRequiredService<IConfiguration>();
-    return client.GetDatabase(configuration["MongoDB:Database"]);
+
+    var databaseName = configuration["MongoDB:DatabaseName"];
+
+    if (string.IsNullOrEmpty(databaseName))
+        throw new Exception("MongoDB database name no configurado");
+
+    return client.GetDatabase(databaseName);
 });
 // Registraciones
 builder.Services.AddSingleton<UserRepository>();

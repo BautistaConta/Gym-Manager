@@ -5,10 +5,14 @@ public class RegistrarPagoRequest
 {
     public string UsuarioId { get; set; } = null!;
     public string SucursalId { get; set; } = null!;
-    public decimal Monto { get; set; }
+    public string CategoriaPagoId { get; set; } = null!;
+
     public MetodoPago MetodoPago { get; set; }
 
-    // cantidad de meses que cubre el pago
-    public int Meses { get; set; }
+    public decimal DescuentoPorcentaje { get; set; }
+
+    // null = automático
+    // con valor = modo manual
+    public DateTime? PeriodoHastaManual { get; set; }
 }
 }
