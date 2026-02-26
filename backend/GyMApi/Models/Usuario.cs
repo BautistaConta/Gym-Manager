@@ -24,5 +24,7 @@ namespace GymManager.API.Models
 
         [BsonElement("fechaAlta")]
         public DateTime FechaAlta { get; set; } = DateTime.UtcNow;
+
+        public string? AlumnoId { get; set; }
     }
 }

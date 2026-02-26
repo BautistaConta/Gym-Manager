@@ -1,5 +1,5 @@
 using GymManager.API.DTOs;
-using GyMApi.Models;
+using GymManager.API.Models;
 using GymManager.API.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

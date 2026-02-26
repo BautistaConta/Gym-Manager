@@ -1,4 +1,4 @@
-namespace GyMApi.Models
+namespace GymManager.API.Models
 {
 public enum TipoAbono
 {

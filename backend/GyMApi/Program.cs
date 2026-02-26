@@ -45,6 +45,8 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
 builder.Services.AddSingleton<UserRepository>();
 builder.Services.AddSingleton<SucursalRepository>();
 builder.Services.AddSingleton<CategoriaPagoRepository>();
+builder.Services.AddSingleton<AlumnoRepository>();
+builder.Services.AddSingleton<PagoRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddSingleton<JwtService>();
 

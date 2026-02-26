@@ -1,4 +1,4 @@
-using GyMApi.Models;
+using GymManager.API.Models;
 using MongoDB.Driver;
 
 namespace GymManager.API.Repositories

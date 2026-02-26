@@ -1,4 +1,4 @@
-using GyMApi.Models;
+using GymManager.API.Models;
 namespace GymManager.API.DTOs
 {
     public class CrearCategoriaPagoRequest
