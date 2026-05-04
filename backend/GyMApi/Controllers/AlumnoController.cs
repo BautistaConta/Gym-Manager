@@ -12,10 +12,12 @@ namespace GymManager.API.Controllers
     public class AlumnosController : ControllerBase
     {
         private readonly AlumnoRepository _repo;
+        private readonly PagoRepository _pagoRepository;
 
-        public AlumnosController(AlumnoRepository repo)
+        public AlumnosController(AlumnoRepository repo, PagoRepository pagoRepository)
         {
             _repo = repo;
+            _pagoRepository = pagoRepository;
         }
 
         // POST api/alumnos
@@ -93,5 +95,41 @@ namespace GymManager.API.Controllers
 
             return Ok(alumno);
         }
+        [HttpGet("{id}/estado")]
+public async Task<IActionResult> GetEstado(string id)
+{
+    var alumno = await _repo.GetByIdAsync(id);
+    if (alumno == null)
+        return NotFound("Alumno no encontrado.");
+
+    var ultimoPago = await _pagoRepository.GetUltimoPagoAsync(id);
+
+    if (ultimoPago == null)
+    {
+        return Ok(new EstadoAlumnoResponse
+        {
+            AlumnoId = alumno.Id,
+            Nombre = alumno.Nombre,
+            DNI = alumno.DNI,
+            Estado = "SIN_PAGOS",
+            FechaVencimiento = null
+        });
+    }
+
+    var hoy = DateTime.UtcNow.Date;
+
+    var estado = ultimoPago.PeriodoHasta.Date >= hoy
+        ? "ACTIVO"
+        : "VENCIDO";
+
+    return Ok(new EstadoAlumnoResponse
+    {
+        AlumnoId = alumno.Id,
+        Nombre = alumno.Nombre,
+        DNI = alumno.DNI,
+        Estado = estado,
+        FechaVencimiento = ultimoPago.PeriodoHasta
+    });
+}
     }
 }
