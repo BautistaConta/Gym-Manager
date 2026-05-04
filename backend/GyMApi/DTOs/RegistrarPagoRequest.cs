@@ -3,7 +3,7 @@ namespace GymManager.API.DTOs
 {
 public class RegistrarPagoRequest
 {
-    public string UsuarioId { get; set; } = null!;
+    public string AlumnoId { get; set; } = null!;
     public string SucursalId { get; set; } = null!;
     public string CategoriaPagoId { get; set; } = null!;
 
@@ -11,8 +11,8 @@ public class RegistrarPagoRequest
 
     public decimal DescuentoPorcentaje { get; set; }
 
-    // null = automático
-    // con valor = modo manual
+    // null → automático
+    // valor → manual
     public DateTime? PeriodoHastaManual { get; set; }
 }
 }
