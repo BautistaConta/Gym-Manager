@@ -34,7 +34,9 @@ namespace GymManager.API.Services
 
         public async Task<Usuario> LoginAsync(LoginRequest request)
         {
+            Console.WriteLine("ANTES DE BUSCAR USUARIO");
             var user = await _repo.GetByEmailAsync(request.Email);
+            Console.WriteLine("DESPUS DE BUSCAR USUARIO");
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 throw new Exception("Credenciales inv�lidas.");
 

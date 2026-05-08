@@ -39,7 +39,7 @@ namespace GymManager.API.Controllers
 
             await _repo.CreateAsync(alumno);
 
-            return CreatedAtAction(nameof(GetById), new { id = alumno.Id }, alumno);
+            return Ok(alumno);
         }
 
         // GET api/alumnos
