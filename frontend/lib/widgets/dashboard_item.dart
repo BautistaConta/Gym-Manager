@@ -22,6 +22,12 @@ DashboardItem(
   route: AppRoutes.gestionAlumnos,
   allowedRoles: [Rol.admin, Rol.gestor],
 ),
+DashboardItem(
+  title: 'Categorías de pago',
+  icon: Icons.payment,
+  route: AppRoutes.gestionCategoriasPago,
+  allowedRoles: [Rol.admin, Rol.gestor],
+),
   // DashboardItem(
   //   title: 'Clases',
   //   icon: Icons.fitness_center,

@@ -6,6 +6,7 @@ class DarkTextField extends StatelessWidget {
   final IconData icon;
   final bool obscureText;
   final Widget? suffix;
+  final TextInputType? keyboardType;
 
   const DarkTextField({
     super.key,
@@ -14,6 +15,7 @@ class DarkTextField extends StatelessWidget {
     required this.icon,
     this.obscureText = false,
     this.suffix,
+    this.keyboardType,
   });
 
   @override
@@ -21,6 +23,7 @@ class DarkTextField extends StatelessWidget {
     return TextField(
       controller: controller,
       obscureText: obscureText,
+      keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
