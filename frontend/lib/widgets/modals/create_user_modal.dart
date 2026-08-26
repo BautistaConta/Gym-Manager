@@ -81,7 +81,7 @@ class _CreateUserModalState extends State<CreateUserModal> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<Rol>(
-                value: _selectedRol,
+                initialValue: _selectedRol,
                 decoration: const InputDecoration(labelText: 'Rol'),
                 items: Rol.values
                     .map(

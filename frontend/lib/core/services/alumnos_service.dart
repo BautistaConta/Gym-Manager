@@ -10,7 +10,7 @@ class AlumnosService {
 
   Future<List<AlumnoModel>> fetchAll() async {
     final token = await _authService.getToken();
-    final url = Uri.parse(ApiConstants.baseUrl + '/api/alumnos');
+    final url = Uri.parse('${ApiConstants.baseUrl}/api/alumnos');
 
     final response = await http.get(
       url,
@@ -34,7 +34,7 @@ class AlumnosService {
     required String telefono,
   }) async {
     final token = await _authService.getToken();
-    final url = Uri.parse(ApiConstants.baseUrl + '/api/alumnos');
+    final url = Uri.parse('${ApiConstants.baseUrl}/api/alumnos');
 
     final response = await http.post(
       url,
@@ -58,7 +58,7 @@ class AlumnosService {
   final token = await _authService.getToken();
 
   final url = Uri.parse(
-    ApiConstants.baseUrl + '/api/alumnos/$alumnoId/estado',
+    '${ApiConstants.baseUrl}/api/alumnos/$alumnoId/estado',
   );
 
   final response = await http.get(

@@ -153,9 +153,9 @@ class _GestionCategoriasPagoScreenState
                                   ? Theme.of(context)
                                       .colorScheme
                                       .primary
-                                      .withOpacity(0.15)
+                                      .withValues(alpha: 0.15)
                                   : Colors.redAccent
-                                      .withOpacity(0.15),
+                                      .withValues(alpha: 0.15),
                               borderRadius:
                                   BorderRadius.circular(12),
                             ),

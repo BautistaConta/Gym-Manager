@@ -1565,19 +1565,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Admin\\.nuget\\packages\\": {}
+    "C:\\Users\\Bautista\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
-      "projectName": "GymApi",
-      "projectPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\GymApi.csproj",
-      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Admin\\OneDrive\\Documentos\\GitHub\\Gym-Manager\\backend\\GyMApi\\obj\\",
+      "projectUniqueName": "C:\\Users\\Bautista\\Documents\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
+      "projectName": "GyMApi",
+      "projectPath": "C:\\Users\\Bautista\\Documents\\GitHub\\Gym-Manager\\backend\\GyMApi\\GyMApi.csproj",
+      "packagesPath": "C:\\Users\\Bautista\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Bautista\\Documents\\GitHub\\Gym-Manager\\backend\\GyMApi\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Bautista\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -1657,7 +1662,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
