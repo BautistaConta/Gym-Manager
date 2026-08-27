@@ -1,3 +1,4 @@
+using GymManager.API.Data;
 using GymManager.API.Models;
 using MongoDB.Driver;
 
@@ -7,9 +8,9 @@ namespace GymManager.API.Repositories
     {
         private readonly IMongoCollection<CategoriaPago> _collection;
 
-        public CategoriaPagoRepository(IMongoDatabase database)
+        public CategoriaPagoRepository(MongoDbContext context)
         {
-            _collection = database.GetCollection<CategoriaPago>("CategoriasPago");
+            _collection = context.CategoriasPago;
         }
 
         public async Task CreateAsync(CategoriaPago categoria)

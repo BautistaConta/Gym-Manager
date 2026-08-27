@@ -1,3 +1,4 @@
+using GymManager.API.Data;
 using GymManager.API.Models;
 using MongoDB.Driver;
 
@@ -7,9 +8,9 @@ namespace GymManager.API.Repositories
     {
         private readonly IMongoCollection<Sucursal> _collection;
 
-        public SucursalRepository(IMongoDatabase database)
+        public SucursalRepository(MongoDbContext context)
         {
-            _collection = database.GetCollection<Sucursal>("Sucursales");
+            _collection = context.Sucursales;
         }
 
         public async Task CreateAsync(Sucursal sucursal)

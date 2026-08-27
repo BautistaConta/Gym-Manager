@@ -1,3 +1,4 @@
+using GymManager.API.Data;
 using GymManager.API.Repositories;
 using GymManager.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,7 +6,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
-using MongoDB.Driver;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,29 +18,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gym API", Version = "v1" });
 });
 
-builder.Services.AddSingleton<IMongoClient>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var connectionString = configuration["MongoDB:ConnectionString"];
+builder.Services.AddSingleton<MongoDbContext>();
 
-    if (string.IsNullOrEmpty(connectionString))
-        throw new Exception("MongoDB connection string no configurada");
-
-    return new MongoClient(connectionString);
-});
-
-builder.Services.AddSingleton<IMongoDatabase>(sp =>
-{
-    var client = sp.GetRequiredService<IMongoClient>();
-    var configuration = sp.GetRequiredService<IConfiguration>();
-
-    var databaseName = configuration["MongoDB:DatabaseName"];
-
-    if (string.IsNullOrEmpty(databaseName))
-        throw new Exception("MongoDB database name no configurado");
-
-    return client.GetDatabase(databaseName);
-});
 // Registraciones
 builder.Services.AddSingleton<UserRepository>();
 builder.Services.AddSingleton<SucursalRepository>();

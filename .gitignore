@@ -30,6 +30,9 @@ secrets.json
 *.egg-info/
 build/
 dist/
+**/[Bb]in/
+**/[Oo]bj/
+backend/GyMApi/appsettings.Development.json
 
 # Pytest / coverage
 .pytest_cache/

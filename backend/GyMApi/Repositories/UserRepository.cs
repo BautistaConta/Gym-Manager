@@ -1,3 +1,4 @@
+using GymManager.API.Data;
 using GymManager.API.Models;
 using MongoDB.Driver;
 
@@ -7,11 +8,9 @@ namespace GymManager.API.Repositories
     {
         private readonly IMongoCollection<Usuario> _usuarios;
 
-        public UserRepository(IConfiguration config)
+        public UserRepository(MongoDbContext context)
         {
-            var client = new MongoClient(config["MongoDB:ConnectionString"]);
-            var database = client.GetDatabase(config["MongoDB:DatabaseName"]);
-            _usuarios = database.GetCollection<Usuario>(config["MongoDB:UsersCollectionName"]);
+            _usuarios = context.Usuarios;
         }
 
         public async Task<Usuario> GetByEmailAsync(string email) =>
