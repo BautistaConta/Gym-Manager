@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using GymManager.API.Models;
 using GymManager.API.Services;
 using GymApi.Models.Roles;
-using MongoDB.Driver;
 
 namespace GymManager.API.Controllers
 {
@@ -59,13 +58,6 @@ namespace GymManager.API.Controllers
                         email = user.Email,
                         rol = user.Rol.ToString()
                     }
-                });
-            }
-            catch (MongoException)
-            {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
-                {
-                    message = "No se pudo conectar con la base de datos."
                 });
             }
             catch (TimeoutException)
