@@ -42,6 +42,9 @@ namespace GymManager.API.Repositories
                 .ToListAsync();
         }
 
+        public async Task<long> CountBySucursalIdAsync(string sucursalId) =>
+            await _collection.CountDocumentsAsync(p => p.SucursalId == sucursalId);
+
         public async Task<List<Pago>> GetByRangoFechasAsync(DateTime desde, DateTime hasta)
         {
             return await _collection

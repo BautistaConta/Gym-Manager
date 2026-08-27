@@ -41,6 +41,17 @@ class _GestionSucursalesScreenState
     }
   }
 
+  Future<void> _edit(SucursalModel s) async {
+    final nombre = TextEditingController(text: s.nombre); final direccion = TextEditingController(text: s.direccion);
+    final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: const Text('Editar sucursal'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nombre, decoration: const InputDecoration(labelText: 'Nombre')), TextField(controller: direccion, decoration: const InputDecoration(labelText: 'Dirección'))]), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Guardar'))]));
+    if (ok != true) return; try { await _service.updateSucursal(s.id, nombre: nombre.text.trim(), direccion: direccion.text.trim()); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+  }
+
+  Future<void> _delete(SucursalModel s) async {
+    final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: const Text('Eliminar sucursal'), content: Text('¿Eliminar ${s.nombre}?'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar'))]));
+    if (ok != true) return; try { await _service.deleteSucursal(s.id); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,6 +121,7 @@ class _GestionSucursalesScreenState
                             ),
                             const SizedBox(height: 6),
                             Text(s.direccion),
+                            Align(alignment: Alignment.centerRight, child: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(onPressed: () => _edit(s), icon: const Icon(Icons.edit_outlined)), IconButton(onPressed: () => _delete(s), icon: const Icon(Icons.delete_outline, color: Colors.redAccent))])),
                           ],
                         ),
                       );

@@ -27,11 +27,15 @@ namespace GymManager.API.Controllers
 
                 var response = new RegistrarPagoResponse
                 {
+                    Id = pago.Id,
                     AlumnoId = pago.AlumnoId,
                     SucursalId = pago.SucursalId,
+                    CategoriaPagoId = pago.CategoriaPagoId,
                     PeriodoDesde = pago.PeriodoDesde,
                     PeriodoHasta = pago.PeriodoHasta,
                     DescuentoPorcentaje = pago.DescuentoPorcentaje,
+                    PrecioCategoria = pago.PrecioCategoria,
+                    MontoFinal = pago.MontoFinal,
                     MetodoPago = pago.MetodoPago.ToString()
                 };
 

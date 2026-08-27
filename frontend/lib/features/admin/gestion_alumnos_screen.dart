@@ -27,6 +27,16 @@ class _GestionAlumnosScreenState
   }
   Map<String, EstadoAlumno> estados = {};
 
+  Future<void> _desactivarAlumno(AlumnoModel alumno) async {
+    try { await _service.deactivateAlumno(alumno.id); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+  }
+
+  Future<void> _editAlumno(AlumnoModel alumno) async {
+    final nombre = TextEditingController(text: alumno.nombre); final telefono = TextEditingController(text: alumno.telefono); var activo = alumno.activo;
+    final ok = await showDialog<bool>(context: context, builder: (context) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(title: const Text('Editar alumno'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nombre, decoration: const InputDecoration(labelText: 'Nombre')), TextField(controller: telefono, decoration: const InputDecoration(labelText: 'Teléfono')), SwitchListTile(title: const Text('Activo'), value: activo, onChanged: (value) => setDialogState(() => activo = value))]), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Guardar'))])));
+    if (ok != true) return; try { await _service.updateAlumno(alumno.id, nombre: nombre.text.trim(), telefono: telefono.text.trim(), activo: activo); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+  }
+
  Future<void> _load() async {
   setState(() {
     loading = true;
@@ -156,7 +166,15 @@ class _GestionAlumnosScreenState
       ),
     ),
 
-    // 🔥 FECHA DE VENCIMIENTO
+    Align(
+      alignment: Alignment.centerRight,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        IconButton(onPressed: () => _editAlumno(a), icon: const Icon(Icons.edit_outlined)),
+        IconButton(onPressed: a.activo ? () => _desactivarAlumno(a) : null, icon: const Icon(Icons.person_off_outlined)),
+      ]),
+    ),
+
+    // Fecha de vencimiento
     if (estado?.fechaVencimiento != null)
       Padding(
         padding: const EdgeInsets.only(top: 6),

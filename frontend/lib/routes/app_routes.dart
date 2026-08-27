@@ -6,6 +6,7 @@ import '../features/Admin/gestion_usuarios_screen.dart';
 import '../features/Admin/gestion_sucursales_screen.dart';
 import '../features/Admin/gestion_alumnos_screen.dart';
 import '../features/Admin/gestion_categorias_pago_screen.dart';
+import '../features/Admin/cobrar_abono_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -15,6 +16,7 @@ class AppRoutes {
   static const String gestionSucursales = '/admin/gestion-sucursales';
   static const String gestionAlumnos = '/admin/gestion-alumnos';
   static const String gestionCategoriasPago = '/admin/gestion-categorias-pago';
+  static const String cobrarAbono = '/admin/cobrar-abono';
 
   static Map<String, WidgetBuilder> routes = {
     login: (_) => const LoginPage(),
@@ -24,5 +26,6 @@ class AppRoutes {
     gestionSucursales: (_) => const GestionSucursalesScreen(),
     gestionAlumnos: (_) => const GestionAlumnosScreen(),
     gestionCategoriasPago: (_) => const GestionCategoriasPagoScreen(),
+    cobrarAbono: (_) => const CobrarAbonoScreen(),
   };
 }

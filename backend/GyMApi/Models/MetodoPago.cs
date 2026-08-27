@@ -3,6 +3,7 @@ namespace GymManager.API.Models
 public enum MetodoPago
 {
      Efectivo,
-     Transferencia
+     Transferencia,
+     Tarjeta
 }
 }

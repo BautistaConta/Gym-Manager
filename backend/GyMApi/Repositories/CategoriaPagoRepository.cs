@@ -1,6 +1,7 @@
 using GymManager.API.Data;
 using GymManager.API.Models;
 using MongoDB.Driver;
+using MongoDB.Bson;
 
 namespace GymManager.API.Repositories
 {
@@ -32,5 +33,8 @@ namespace GymManager.API.Repositories
         {
             await _collection.ReplaceOneAsync(c => c.Id == categoria.Id, categoria);
         }
+
+        public async Task DeleteLegacyWithoutIdAsync() =>
+            await _collection.DeleteOneAsync(Builders<CategoriaPago>.Filter.Eq("_id", BsonNull.Value));
     }
 }

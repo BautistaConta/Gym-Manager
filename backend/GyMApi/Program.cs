@@ -28,6 +28,9 @@ builder.Services.AddSingleton<AlumnoRepository>();
 builder.Services.AddSingleton<PagoRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PagoService>();
+builder.Services.AddScoped<AlumnoService>();
+builder.Services.AddScoped<CategoriaPagoService>();
+builder.Services.AddScoped<SucursalService>();
 builder.Services.AddSingleton<JwtService>();
 
 // CORS - permitir el frontend (cambia origen si es necesario)

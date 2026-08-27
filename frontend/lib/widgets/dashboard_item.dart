@@ -28,6 +28,12 @@ DashboardItem(
   route: AppRoutes.gestionCategoriasPago,
   allowedRoles: [Rol.admin, Rol.gestor],
 ),
+DashboardItem(
+  title: 'Cobrar abono',
+  icon: Icons.point_of_sale,
+  route: AppRoutes.cobrarAbono,
+  allowedRoles: [Rol.admin, Rol.gestor],
+),
   // DashboardItem(
   //   title: 'Clases',
   //   icon: Icons.fitness_center,

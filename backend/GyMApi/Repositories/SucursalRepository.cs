@@ -1,6 +1,7 @@
 using GymManager.API.Data;
 using GymManager.API.Models;
 using MongoDB.Driver;
+using MongoDB.Bson;
 
 namespace GymManager.API.Repositories
 {
@@ -27,5 +28,14 @@ namespace GymManager.API.Repositories
         {
             return await _collection.Find(s => s.Id == id).FirstOrDefaultAsync();
         }
+
+        public async Task UpdateAsync(Sucursal sucursal) =>
+            await _collection.ReplaceOneAsync(s => s.Id == sucursal.Id, sucursal);
+
+        public async Task DeleteAsync(string id) =>
+            await _collection.DeleteOneAsync(s => s.Id == id);
+
+        public async Task DeleteLegacyWithoutIdAsync() =>
+            await _collection.DeleteOneAsync(Builders<Sucursal>.Filter.Eq("_id", BsonNull.Value));
     }
 }
