@@ -12,7 +12,7 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: primaryGreen,
       secondary: primaryGreen,
-      background: Colors.black,
+      surface: Colors.black,
     ),
 
     // AppBar

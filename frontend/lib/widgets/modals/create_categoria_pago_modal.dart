@@ -86,7 +86,7 @@ class _CreateCategoriaPagoModalState
             const SizedBox(height: 16),
 
             DropdownButtonFormField<TipoAbono>(
-              value: tipoAbono,
+              initialValue: tipoAbono,
               dropdownColor: const Color(0xFF1A1A1A),
               decoration: const InputDecoration(
                 labelText: 'Tipo de abono',

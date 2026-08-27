@@ -102,7 +102,7 @@ Widget build(BuildContext context) {
         );
 
         if (created == true) {
-          _loadUsers();};
+          _loadUsers();}
       }
       ),
       ],
