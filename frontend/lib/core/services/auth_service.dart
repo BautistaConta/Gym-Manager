@@ -19,11 +19,13 @@ class AuthService {
   Future<String?> getToken() async {
     return _storage.read(key: _tokenKey);
   }
-Future<UserModel?> getStoredUser() async {
-  final userData = await _storage.read(key: _userKey);
-  if (userData == null) return null;
-  return UserModel.fromJson(jsonDecode(userData));
-}
+
+  Future<UserModel?> getStoredUser() async {
+    final userData = await _storage.read(key: _userKey);
+    if (userData == null) return null;
+    return UserModel.fromJson(jsonDecode(userData));
+  }
+
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userKey);
@@ -38,10 +40,7 @@ Future<UserModel?> getStoredUser() async {
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "password": password,
-      }),
+      body: jsonEncode({"email": email, "password": password}),
     );
 
     print("📥 Status login: ${response.statusCode}");
@@ -65,10 +64,7 @@ Future<UserModel?> getStoredUser() async {
 
     // Store user
     if (data['user'] != null) {
-      await _storage.write(
-        key: _userKey,
-        value: jsonEncode(data['user']),
-      );
+      await _storage.write(key: _userKey, value: jsonEncode(data['user']));
     }
 
     return data;
@@ -78,7 +74,10 @@ Future<UserModel?> getStoredUser() async {
   // REGISTER
   // -------------------------------
   Future<Map<String, dynamic>> register(
-      String nombre, String email, String password) async {
+    String nombre,
+    String email,
+    String password,
+  ) async {
     final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.register);
 
     final response = await http.post(

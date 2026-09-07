@@ -1,228 +1,379 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import '../../core/services/alumnos_service.dart';
+import '../../core/theme/app_theme.dart';
 import '../../models/alumno_model.dart';
 import '../../models/estado_alumno.dart';
+import '../../widgets/app_ui.dart';
 import '../../widgets/modals/create_alumno_modal.dart';
 
 class GestionAlumnosScreen extends StatefulWidget {
   const GestionAlumnosScreen({super.key});
-
   @override
-  State<GestionAlumnosScreen> createState() =>
-      _GestionAlumnosScreenState();
+  State<GestionAlumnosScreen> createState() => _GestionAlumnosScreenState();
 }
 
-class _GestionAlumnosScreenState
-    extends State<GestionAlumnosScreen> {
+class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
   final AlumnosService _service = AlumnosService();
-
+  final TextEditingController _searchController = TextEditingController();
   bool loading = true;
   String? error;
   List<AlumnoModel> alumnos = [];
+  Map<String, EstadoAlumno> estados = {};
 
   @override
   void initState() {
     super.initState();
     _load();
   }
-  Map<String, EstadoAlumno> estados = {};
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final data = await _service.fetchAll();
+      final results = await Future.wait(
+        data.map((a) async {
+          try {
+            return MapEntry(a.id, await _service.getEstado(a.id));
+          } catch (_) {
+            return null;
+          }
+        }),
+      );
+      if (!mounted) return;
+      setState(() {
+        alumnos = data;
+        estados = {
+          for (final e in results)
+            if (e != null) e.key: e.value,
+        };
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
 
   Future<void> _desactivarAlumno(AlumnoModel alumno) async {
-    try { await _service.deactivateAlumno(alumno.id); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Desactivar alumno'),
+        content: Text('¿Querés desactivar a ${alumno.nombre}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Desactivar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _service.deactivateAlumno(alumno.id);
+      await _load();
+    } catch (e) {
+      _showError(e);
+    }
   }
 
   Future<void> _editAlumno(AlumnoModel alumno) async {
-    final nombre = TextEditingController(text: alumno.nombre); final telefono = TextEditingController(text: alumno.telefono); var activo = alumno.activo;
-    final ok = await showDialog<bool>(context: context, builder: (context) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(title: const Text('Editar alumno'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: nombre, decoration: const InputDecoration(labelText: 'Nombre')), TextField(controller: telefono, decoration: const InputDecoration(labelText: 'Teléfono')), SwitchListTile(title: const Text('Activo'), value: activo, onChanged: (value) => setDialogState(() => activo = value))]), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Guardar'))])));
-    if (ok != true) return; try { await _service.updateAlumno(alumno.id, nombre: nombre.text.trim(), telefono: telefono.text.trim(), activo: activo); await _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+    final nombre = TextEditingController(text: alumno.nombre);
+    final telefono = TextEditingController(text: alumno.telefono);
+    var activo = alumno.activo;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Editar alumno'),
+          content: SizedBox(
+            width: 430,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nombre,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: telefono,
+                  decoration: const InputDecoration(
+                    labelText: 'Teléfono',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Alumno activo'),
+                  subtitle: const Text('Puede acceder y registrar pagos'),
+                  value: activo,
+                  onChanged: (value) => setDialogState(() => activo = value),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Guardar cambios'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final newName = nombre.text.trim();
+    final newPhone = telefono.text.trim();
+    nombre.dispose();
+    telefono.dispose();
+    if (ok != true) return;
+    try {
+      await _service.updateAlumno(
+        alumno.id,
+        nombre: newName,
+        telefono: newPhone,
+        activo: activo,
+      );
+      await _load();
+    } catch (e) {
+      _showError(e);
+    }
   }
 
- Future<void> _load() async {
-  setState(() {
-    loading = true;
-    error = null;
-  });
-
-  try {
-    final data = await _service.fetchAll();
-
-    // 🔥 Carga paralela de estados
-    final futures = data.map((a) async {
-      try {
-        final estado = await _service.getEstado(a.id);
-        return MapEntry(a.id, estado);
-      } catch (_) {
-        return null;
-      }
-    });
-
-    final results = await Future.wait(futures);
-
-    final estadosMap = {
-      for (var e in results)
-        if (e != null) e.key: e.value
-    };
-
-    setState(() {
-      alumnos = data;
-      estados = estadosMap;
-    });
-  } catch (e) {
-    setState(() => error = e.toString());
-  } finally {
-    setState(() => loading = false);
+  void _showError(Object e) {
+    if (mounted)
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = alumnos
+        .where(
+          (a) =>
+              a.nombre.toLowerCase().contains(query) || a.dni.contains(query),
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Alumnos'),
+        title: const Text('Alumnos'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _load,
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            tooltip: 'Crear alumno',
-            onPressed: () async {
-              final created = await showDialog<bool>(
-                context: context,
-                builder: (_) => const CreateAlumnoModal(),
-              );
-
-              if (created == true) {
-                _load();
-              }
-            },
+            tooltip: 'Actualizar',
+            onPressed: loading ? null : _load,
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          if (await showDialog<bool>(
+                context: context,
+                builder: (_) => const CreateAlumnoModal(),
+              ) ==
+              true)
+            _load();
+        },
+        icon: const Icon(Icons.person_add_alt_1),
+        label: const Text('Nuevo alumno'),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : error != null
-              ? Center(
-                  child: Text(
-                    error!,
-                    style: const TextStyle(color: Colors.redAccent),
+          ? Center(
+              child: Text(
+                error!,
+                style: const TextStyle(color: AppTheme.danger),
+              ),
+            )
+          : AppPage(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeader(
+                    icon: Icons.groups_2_outlined,
+                    title: 'Gestión de alumnos',
+                    subtitle: '${alumnos.length} alumnos registrados',
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: alumnos.length,
-                    itemBuilder: (context, i) {
-                      final a = alumnos[i];
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: 'Buscar alumno',
+                      hintText: 'Nombre o DNI',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: query.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () =>
+                                  setState(_searchController.clear),
+                              icon: const Icon(Icons.close),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  if (filtered.isEmpty)
+                    EmptyState(
+                      icon: Icons.person_search_outlined,
+                      title: query.isEmpty
+                          ? 'No hay alumnos'
+                          : 'Sin resultados',
+                      message: query.isEmpty
+                          ? 'Creá el primer alumno para comenzar.'
+                          : 'Probá con otro nombre o DNI.',
+                    )
+                  else
+                    ...filtered.map((a) {
                       final estado = estados[a.id];
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF111111),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.primary,
+                      final stateColor = estado?.estado == 'ACTIVO'
+                          ? AppTheme.primaryGreen
+                          : estado?.estado == 'VENCIDO'
+                          ? AppTheme.danger
+                          : AppTheme.textSecondary;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SurfaceCard(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final details = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: AppTheme.surfaceHigh,
+                                        foregroundColor: AppTheme.primaryGreen,
+                                        child: Text(
+                                          a.nombre.isEmpty
+                                              ? '?'
+                                              : a.nombre[0].toUpperCase(),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              a.nombre,
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.titleMedium,
+                                            ),
+                                            Text(
+                                              'DNI ${a.dni}',
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      StatusBadge(
+                                        label:
+                                            estado?.estado ??
+                                            (a.activo ? 'Activo' : 'Inactivo'),
+                                        color: stateColor,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  InfoRow(
+                                    icon: Icons.phone_outlined,
+                                    label: 'Teléfono',
+                                    value: a.telefono.isEmpty
+                                        ? 'Sin teléfono'
+                                        : a.telefono,
+                                  ),
+                                  if (estado?.fechaVencimiento != null)
+                                    InfoRow(
+                                      icon: Icons.event_outlined,
+                                      label: 'Vencimiento',
+                                      value: DateFormat(
+                                        'dd/MM/yyyy',
+                                      ).format(estado!.fechaVencimiento!),
+                                    ),
+                                ],
+                              );
+                              final actions = Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () => _editAlumno(a),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text('Editar'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip: 'Desactivar alumno',
+                                    onPressed: a.activo
+                                        ? () => _desactivarAlumno(a)
+                                        : null,
+                                    icon: const Icon(
+                                      Icons.person_off_outlined,
+                                      color: AppTheme.danger,
+                                    ),
+                                  ),
+                                ],
+                              );
+                              return constraints.maxWidth > 620
+                                  ? Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Expanded(child: details),
+                                        const SizedBox(width: 18),
+                                        actions,
+                                      ],
+                                    )
+                                  : Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        details,
+                                        const Divider(height: 24),
+                                        actions,
+                                      ],
+                                    );
+                            },
                           ),
                         ),
-                       child: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            a.nombre,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-          ),
-        ),
-        if (estado != null)
-          _buildEstadoBadge(estado.estado),
-      ],
-    ),
-
-    const SizedBox(height: 6),
-
-    Text('DNI: ${a.dni}'),
-    Text('Tel: ${a.telefono}'),
-
-    const SizedBox(height: 6),
-
-    Text(
-      a.activo ? 'Activo' : 'Inactivo',
-      style: TextStyle(
-        color: a.activo
-            ? Theme.of(context).colorScheme.primary
-            : Colors.redAccent,
-      ),
-    ),
-
-    Align(
-      alignment: Alignment.centerRight,
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        IconButton(onPressed: () => _editAlumno(a), icon: const Icon(Icons.edit_outlined)),
-        IconButton(onPressed: a.activo ? () => _desactivarAlumno(a) : null, icon: const Icon(Icons.person_off_outlined)),
-      ]),
-    ),
-
-    // Fecha de vencimiento
-    if (estado?.fechaVencimiento != null)
-      Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          'Vence: ${estado!.fechaVencimiento!.toLocal().toString().split(' ')[0]}',
-          style: const TextStyle(color: Colors.grey),
-        ),
-      ),
-  ],
-),
                       );
-                    },
-                  ),
-                ),
+                    }),
+                  const SizedBox(height: 70),
+                ],
+              ),
+            ),
     );
   }
-
-  Widget _buildEstadoBadge(String estado) {
-  final primary = Theme.of(context).colorScheme.primary;
-
-  Color color;
-
-  switch (estado) {
-    case 'ACTIVO':
-      color = primary;
-      break;
-    case 'VENCIDO':
-      color = Colors.redAccent;
-      break;
-    default:
-      color = Colors.grey;
-  }
-
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: color),
-    ),
-    child: Text(
-      estado,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 12,
-      ),
-    ),
-  );
-}
 }

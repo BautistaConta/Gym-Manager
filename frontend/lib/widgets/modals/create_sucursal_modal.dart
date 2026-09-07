@@ -5,12 +5,10 @@ class CreateSucursalModal extends StatefulWidget {
   const CreateSucursalModal({super.key});
 
   @override
-  State<CreateSucursalModal> createState() =>
-      _CreateSucursalModalState();
+  State<CreateSucursalModal> createState() => _CreateSucursalModalState();
 }
 
-class _CreateSucursalModalState
-    extends State<CreateSucursalModal> {
+class _CreateSucursalModalState extends State<CreateSucursalModal> {
   final _formKey = GlobalKey<FormState>();
   final _nombreCtrl = TextEditingController();
   final _direccionCtrl = TextEditingController();
@@ -30,13 +28,13 @@ class _CreateSucursalModalState
       );
 
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sucursal creada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sucursal creada')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       setState(() => loading = false);
     }
@@ -46,25 +44,40 @@ class _CreateSucursalModalState
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Crear sucursal'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _nombreCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Campo requerido' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _direccionCtrl,
-              decoration: const InputDecoration(labelText: 'Dirección'),
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Campo requerido' : null,
-            ),
-          ],
+      content: SizedBox(
+        width: 480,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ingresá la información de la nueva sede.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _nombreCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de la sucursal',
+                  prefixIcon: Icon(Icons.storefront_outlined),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Campo requerido' : null,
+              ),
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: _direccionCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Dirección',
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Campo requerido' : null,
+              ),
+            ],
+          ),
         ),
       ),
       actions: [

@@ -17,6 +17,16 @@ namespace GymManager.API.Controllers
             _service = service;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
+
+        [HttpPost("{id}/recordatorio")]
+        public async Task<IActionResult> EnviarRecordatorio(string id)
+        {
+            try { return Ok(await _service.EnviarRecordatorioAsync(id)); }
+            catch (DomainException ex) { return BadRequest(new { message = ex.Message }); }
+        }
+
         // POST api/pagos
         [HttpPost]
         public async Task<IActionResult> RegistrarPago([FromBody] RegistrarPagoRequest request)

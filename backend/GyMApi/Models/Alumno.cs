@@ -6,6 +6,8 @@ public class Alumno
     public string Nombre { get; set; }
     public string DNI { get; set; }
     public string Telefono { get; set; }
+    public bool NotificacionesHabilitadas { get; set; } = true;
+    public DateTime? UltimaNotificacionEnviada { get; set; }
     public DateTime FechaAlta { get; set; }
     public bool Activo { get; set; }
 }

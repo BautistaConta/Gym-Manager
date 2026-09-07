@@ -40,9 +40,9 @@ class _CreateUserModalState extends State<CreateUserModal> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -84,12 +84,7 @@ class _CreateUserModalState extends State<CreateUserModal> {
                 initialValue: _selectedRol,
                 decoration: const InputDecoration(labelText: 'Rol'),
                 items: Rol.values
-                    .map(
-                      (r) => DropdownMenuItem(
-                        value: r,
-                        child: Text(r.name),
-                      ),
-                    )
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _selectedRol = v);

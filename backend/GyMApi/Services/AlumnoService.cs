@@ -23,6 +23,7 @@ public class AlumnoService
     public async Task<Alumno> CreateAsync(CrearAlumnoRequest request)
     {
         Validate(request.Nombre, request.DNI, request.Telefono);
+        NotificacionService.ValidatePhone(request.Telefono);
         var dni = request.DNI.Trim();
         if (await _alumnos.GetByDniAsync(dni) is not null)
             throw new DomainException("Ya existe un alumno con ese DNI.");
@@ -42,6 +43,7 @@ public class AlumnoService
     public async Task<Alumno> UpdateAsync(string id, ActualizarAlumnoRequest request)
     {
         Validate(request.Nombre, "0", request.Telefono);
+        NotificacionService.ValidatePhone(request.Telefono);
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         alumno.Nombre = request.Nombre.Trim();
         alumno.Telefono = request.Telefono.Trim();
@@ -55,6 +57,14 @@ public class AlumnoService
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         alumno.Activo = false;
         await _alumnos.UpdateAsync(alumno);
+    }
+
+    public async Task<Alumno> ActualizarNotificacionesAsync(string id, bool habilitadas)
+    {
+        var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
+        alumno.NotificacionesHabilitadas = habilitadas;
+        await _alumnos.UpdateAsync(alumno);
+        return alumno;
     }
 
     public async Task<EstadoAlumnoResponse> GetEstadoAsync(string id)

@@ -13,9 +13,7 @@ class CategoriasPagoService {
 
     final response = await http.get(
       Uri.parse('${ApiConstants.baseUrl}/api/categorias-pago'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode != 200) {
@@ -24,9 +22,7 @@ class CategoriasPagoService {
 
     final List data = jsonDecode(response.body);
 
-    return data
-        .map((e) => CategoriaPagoModel.fromJson(e))
-        .toList();
+    return data.map((e) => CategoriaPagoModel.fromJson(e)).toList();
   }
 
   Future<bool> create({
@@ -51,20 +47,46 @@ class CategoriasPagoService {
       }),
     );
 
-    if (response.statusCode != 201 && response.statusCode != 200) throw Exception('No se pudo crear la categoría: ${response.body}');
+    if (response.statusCode != 201 && response.statusCode != 200)
+      throw Exception('No se pudo crear la categoría: ${response.body}');
     return true;
   }
 
-  Future<void> update(String id, {required String nombre, required double precio, required int mesesDuracion, required int tipoAbono, required bool activa}) async {
+  Future<void> update(
+    String id, {
+    required String nombre,
+    required double precio,
+    required int mesesDuracion,
+    required int tipoAbono,
+    required bool activa,
+  }) async {
     final token = await _authService.getToken();
-    final response = await http.put(Uri.parse('${ApiConstants.baseUrl}/api/categorias-pago/$id'), headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: jsonEncode({'nombre': nombre, 'precio': precio, 'mesesDuracion': mesesDuracion, 'tipoAbono': tipoAbono, 'activa': activa}));
-    if (response.statusCode != 200) throw Exception('No se pudo actualizar la categoría: ${response.body}');
+    final response = await http.put(
+      Uri.parse('${ApiConstants.baseUrl}/api/categorias-pago/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'nombre': nombre,
+        'precio': precio,
+        'mesesDuracion': mesesDuracion,
+        'tipoAbono': tipoAbono,
+        'activa': activa,
+      }),
+    );
+    if (response.statusCode != 200)
+      throw Exception('No se pudo actualizar la categoría: ${response.body}');
   }
 
   Future<void> deactivate(String id) async {
     final token = await _authService.getToken();
     final path = id.isEmpty ? '/sin-id' : '/$id';
-    final response = await http.delete(Uri.parse('${ApiConstants.baseUrl}/api/categorias-pago$path'), headers: {'Authorization': 'Bearer $token'});
-    if (response.statusCode != 204) throw Exception('No se pudo desactivar la categoría: ${response.body}');
+    final response = await http.delete(
+      Uri.parse('${ApiConstants.baseUrl}/api/categorias-pago$path'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 204)
+      throw Exception('No se pudo desactivar la categoría: ${response.body}');
   }
 }

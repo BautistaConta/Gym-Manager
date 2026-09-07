@@ -22,7 +22,7 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService = AuthService();
 
-  AuthNotifier(): super(AuthState(loading: true)) {
+  AuthNotifier() : super(AuthState(loading: true)) {
     _init();
   }
 

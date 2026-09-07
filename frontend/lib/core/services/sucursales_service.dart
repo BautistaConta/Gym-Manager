@@ -40,10 +40,7 @@ class SucursalesService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'nombre': nombre,
-        'direccion': direccion,
-      }),
+      body: jsonEncode({'nombre': nombre, 'direccion': direccion}),
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
@@ -51,16 +48,32 @@ class SucursalesService {
     }
   }
 
-  Future<void> updateSucursal(String id, {required String nombre, required String direccion}) async {
+  Future<void> updateSucursal(
+    String id, {
+    required String nombre,
+    required String direccion,
+  }) async {
     final token = await _authService.getToken();
-    final response = await http.put(Uri.parse('${ApiConstants.baseUrl}${ApiConstants.sucursales}/$id'), headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'}, body: jsonEncode({'nombre': nombre, 'direccion': direccion}));
-    if (response.statusCode != 200) throw Exception('No se pudo actualizar la sucursal: ${response.body}');
+    final response = await http.put(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.sucursales}/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'nombre': nombre, 'direccion': direccion}),
+    );
+    if (response.statusCode != 200)
+      throw Exception('No se pudo actualizar la sucursal: ${response.body}');
   }
 
   Future<void> deleteSucursal(String id) async {
     final token = await _authService.getToken();
     final path = id.isEmpty ? '/sin-id' : '/$id';
-    final response = await http.delete(Uri.parse('${ApiConstants.baseUrl}${ApiConstants.sucursales}$path'), headers: {'Authorization': 'Bearer $token'});
-    if (response.statusCode != 204) throw Exception('No se pudo eliminar la sucursal: ${response.body}');
+    final response = await http.delete(
+      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.sucursales}$path'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 204)
+      throw Exception('No se pudo eliminar la sucursal: ${response.body}');
   }
 }

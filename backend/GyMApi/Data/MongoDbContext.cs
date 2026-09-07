@@ -10,6 +10,7 @@ namespace GymManager.API.Data
         public IMongoCollection<Pago> Pagos { get; }
         public IMongoCollection<CategoriaPago> CategoriasPago { get; }
         public IMongoCollection<Sucursal> Sucursales { get; }
+        public IMongoCollection<NotificacionWhatsApp> NotificacionesWhatsApp { get; }
 
         public MongoDbContext(IConfiguration configuration)
         {
@@ -31,6 +32,7 @@ namespace GymManager.API.Data
             Pagos = database.GetCollection<Pago>("Pagos");
             CategoriasPago = database.GetCollection<CategoriaPago>("CategoriasPago");
             Sucursales = database.GetCollection<Sucursal>("Sucursales");
+            NotificacionesWhatsApp = database.GetCollection<NotificacionWhatsApp>("NotificacionesWhatsApp");
         }
     }
 }

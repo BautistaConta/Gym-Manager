@@ -5,12 +5,10 @@ class CreateAlumnoModal extends StatefulWidget {
   const CreateAlumnoModal({super.key});
 
   @override
-  State<CreateAlumnoModal> createState() =>
-      _CreateAlumnoModalState();
+  State<CreateAlumnoModal> createState() => _CreateAlumnoModalState();
 }
 
-class _CreateAlumnoModalState
-    extends State<CreateAlumnoModal> {
+class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
   final _formKey = GlobalKey<FormState>();
   final _nombreCtrl = TextEditingController();
   final _dniCtrl = TextEditingController();
@@ -33,13 +31,13 @@ class _CreateAlumnoModalState
       );
 
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alumno creado')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Alumno creado')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       setState(() => loading = false);
     }

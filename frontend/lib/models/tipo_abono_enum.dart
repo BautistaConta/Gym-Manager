@@ -1,7 +1,5 @@
-enum TipoAbono {
-  adulto,
-  nino,
-}
+enum TipoAbono { adulto, nino }
+
 String tipoAbonoLabel(int tipo) {
   switch (tipo) {
     case 0:

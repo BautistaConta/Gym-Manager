@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/services/categorias_pago_service.dart';
-import '../../../models/categoria_pago_model.dart';
-import '../../../models/tipo_abono_enum.dart';
-import '../../../widgets/modals/create_categoria_pago_modal.dart';
+import '../../core/services/categorias_pago_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/categoria_pago_model.dart';
+import '../../models/tipo_abono_enum.dart';
+import '../../widgets/modals/create_categoria_pago_modal.dart';
 
 class GestionCategoriasPagoScreen extends StatefulWidget {
   const GestionCategoriasPagoScreen({super.key});
@@ -70,52 +71,72 @@ class _GestionCategoriasPagoScreenState
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Editar categoría'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nombreController,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                ),
-                TextField(
-                  controller: precioController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Precio'),
-                ),
-                TextField(
-                  controller: mesesController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Meses de duración',
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Modificá la información comercial del abono.',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                ),
-                DropdownButtonFormField<TipoAbono>(
-                  initialValue: tipoAbono,
-                  decoration: const InputDecoration(labelText: 'Tipo de abono'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: TipoAbono.adulto,
-                      child: Text('Adulto'),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: nombreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre del abono',
+                      prefixIcon: Icon(Icons.card_membership_outlined),
                     ),
-                    DropdownMenuItem(
-                      value: TipoAbono.nino,
-                      child: Text('Niño'),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: precioController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio',
+                      prefixIcon: Icon(Icons.attach_money),
                     ),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setDialogState(() => tipoAbono = value);
-                    }
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Activa'),
-                  value: activa,
-                  onChanged: (value) => setDialogState(() => activa = value),
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: mesesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Meses de duración',
+                      prefixIcon: Icon(Icons.calendar_month_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  DropdownMenu<TipoAbono>(
+                    initialSelection: tipoAbono,
+                    expandedInsets: EdgeInsets.zero,
+                    label: const Text('Tipo de abono'),
+                    leadingIcon: const Icon(Icons.person_outline),
+                    dropdownMenuEntries: const [
+                      DropdownMenuEntry(
+                        value: TipoAbono.adulto,
+                        label: 'Adulto',
+                      ),
+                      DropdownMenuEntry(value: TipoAbono.nino, label: 'Niño'),
+                    ],
+                    onSelected: (value) {
+                      if (value != null) {
+                        setDialogState(() => tipoAbono = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Categoría activa'),
+                    subtitle: const Text('Disponible para nuevos cobros'),
+                    value: activa,
+                    onChanged: (value) => setDialogState(() => activa = value),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -243,11 +264,9 @@ class _GestionCategoriasPagoScreenState
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF111111),
+                    color: AppTheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    border: Border.all(color: AppTheme.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

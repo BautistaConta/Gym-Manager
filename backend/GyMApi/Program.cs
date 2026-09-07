@@ -1,6 +1,9 @@
 using GymManager.API.Data;
 using GymManager.API.Repositories;
 using GymManager.API.Services;
+using GymManager.API.Jobs;
+using GymManager.API.Options;
+using GymManager.API.Senders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -16,6 +19,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Gym API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Pegá únicamente el token JWT obtenido en /api/Auth/login."
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            Array.Empty<string>()
+        }
+    });
 });
 
 builder.Services.AddSingleton<MongoDbContext>();
@@ -26,12 +45,18 @@ builder.Services.AddSingleton<SucursalRepository>();
 builder.Services.AddSingleton<CategoriaPagoRepository>();
 builder.Services.AddSingleton<AlumnoRepository>();
 builder.Services.AddSingleton<PagoRepository>();
+builder.Services.AddSingleton<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PagoService>();
 builder.Services.AddScoped<AlumnoService>();
 builder.Services.AddScoped<CategoriaPagoService>();
 builder.Services.AddScoped<SucursalService>();
+builder.Services.AddScoped<NotificacionService>();
 builder.Services.AddSingleton<JwtService>();
+builder.Services.Configure<TwilioOptions>(builder.Configuration.GetSection(TwilioOptions.SectionName));
+builder.Services.AddHttpClient<IWhatsAppSender, TwilioWhatsAppSender>(client => client.BaseAddress = new Uri("https://api.twilio.com/"));
+builder.Services.AddHostedService<VencimientosNotificacionJob>();
+builder.Services.AddHostedService<EnviarNotificacionesJob>();
 
 // CORS - permitir el frontend (cambia origen si es necesario)
 builder.Services.AddCors(options =>

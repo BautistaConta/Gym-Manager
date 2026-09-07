@@ -11,7 +11,8 @@ class GestionUsuariosScreen extends ConsumerStatefulWidget {
   const GestionUsuariosScreen({super.key});
 
   @override
-  ConsumerState<GestionUsuariosScreen> createState() => _GestionUsuariosScreenState();
+  ConsumerState<GestionUsuariosScreen> createState() =>
+      _GestionUsuariosScreenState();
 }
 
 class _GestionUsuariosScreenState extends ConsumerState<GestionUsuariosScreen> {
@@ -60,7 +61,11 @@ class _GestionUsuariosScreenState extends ConsumerState<GestionUsuariosScreen> {
         users = users.map((u) {
           if (u.id == userId) {
             return UserModel(
-                id: u.id, nombre: u.nombre, email: u.email, rol: rolFromString(newRol));
+              id: u.id,
+              nombre: u.nombre,
+              email: u.email,
+              rol: rolFromString(newRol),
+            );
           }
           return u;
         }).toList();
@@ -72,77 +77,72 @@ class _GestionUsuariosScreenState extends ConsumerState<GestionUsuariosScreen> {
   }
 
   @override
-Widget build(BuildContext context) {
-  final authState = ref.watch(authProvider);
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
 
-  if (authState.loading) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
+    if (authState.loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
-  // Protección extra: solo admin 
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text('Gestión de Usuarios'),
-      actions: [
-        IconButton(
-          onPressed: _loadUsers,
-          icon: const Icon(Icons.refresh),
-          tooltip: 'Refrescar',
-        ),
-         IconButton(
-      icon: const Icon(Icons.person_add),
-      tooltip: 'Crear usuario',
-      onPressed: () async {
-        final created = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const CreateUserModal(),
-        );
+    // Protección extra: solo admin
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gestión de Usuarios'),
+        actions: [
+          IconButton(
+            onPressed: _loadUsers,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refrescar',
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            tooltip: 'Crear usuario',
+            onPressed: () async {
+              final created = await showDialog<bool>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const CreateUserModal(),
+              );
 
-        if (created == true) {
-          _loadUsers();}
-      }
+              if (created == true) {
+                _loadUsers();
+              }
+            },
+          ),
+        ],
       ),
-      ],
-    ),
-    body: loading
-        ? const Center(
-            child: CircularProgressIndicator(),
-          )
-        : error != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Error: $error',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.redAccent),
-                  ),
-                ),
-              )
-            : RefreshIndicator(
-                onRefresh: _loadUsers,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: users.length,
-                  itemBuilder: (context, i) {
-                    final u = users[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: UserCard(
-                        user: u,
-                        onChangeRol: (newRole) =>
-                            _onChangeRol(u.id, newRole),
-                      ),
-                    );
-                  },
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Error: $error',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
                 ),
               ),
-  );
-}
+            )
+          : RefreshIndicator(
+              onRefresh: _loadUsers,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: users.length,
+                itemBuilder: (context, i) {
+                  final u = users[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: UserCard(
+                      user: u,
+                      onChangeRol: (newRole) => _onChangeRol(u.id, newRole),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
 }

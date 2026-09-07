@@ -8,5 +8,4 @@ class ApiConstants {
   static String changeRol(String id) => "/api/users/$id/rol";
   static const String crearEmpleado = "/api/users/crear-empleado";
   static const String sucursales = "/api/sucursales";
-  
 }

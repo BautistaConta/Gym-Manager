@@ -18,6 +18,16 @@ namespace GymManager.API.Repositories
             await _collection.InsertOneAsync(pago);
         }
 
+        public async Task<List<Pago>> GetAllAsync()
+        {
+            return await _collection.Find(_ => true).SortByDescending(p => p.FechaPago).ToListAsync();
+        }
+
+        public async Task<Pago?> GetByIdAsync(string id)
+        {
+            return await _collection.Find(p => p.Id == id).FirstOrDefaultAsync();
+        }
+
         public async Task<List<Pago>> GetByAlumnoIdAsync(string alumnoId)
         {
             return await _collection

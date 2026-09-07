@@ -14,4 +14,3 @@ class DashboardItem {
     required this.allowedRoles,
   });
 }
-
