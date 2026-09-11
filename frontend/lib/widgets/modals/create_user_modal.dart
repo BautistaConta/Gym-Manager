@@ -15,7 +15,7 @@ class _CreateUserModalState extends State<CreateUserModal> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
 
-  Rol _selectedRol = Rol.alumno;
+  Rol _selectedRol = Rol.gestor;
   bool loading = false;
 
   final UsersService _usersService = UsersService();
@@ -40,6 +40,7 @@ class _CreateUserModalState extends State<CreateUserModal> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -83,7 +84,7 @@ class _CreateUserModalState extends State<CreateUserModal> {
               DropdownButtonFormField<Rol>(
                 initialValue: _selectedRol,
                 decoration: const InputDecoration(labelText: 'Rol'),
-                items: Rol.values
+                items: const [Rol.admin, Rol.gestor]
                     .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
                     .toList(),
                 onChanged: (v) {

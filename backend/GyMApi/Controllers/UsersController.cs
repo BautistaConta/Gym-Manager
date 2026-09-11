@@ -14,9 +14,9 @@ namespace GymManager.API.Controllers
     [Route("api/users")]
     public class UsersController : ControllerBase
     {
-        private readonly UserRepository _repo;
+        private readonly IUserRepository _repo;
         private readonly UserService _userService;
-        public UsersController(UserRepository repo, UserService userService)
+        public UsersController(IUserRepository repo, UserService userService)
         {
             _repo = repo;
             _userService = userService;
@@ -73,29 +73,21 @@ namespace GymManager.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CambiarRol(string id, [FromBody] UpdateRolRequest request)
         {
-           if (!Enum.TryParse<RolUsuario>(request.NuevoRol, true, out var nuevoRol))
-    {
-        return BadRequest("Rol inválido");
-    }
-
-    var user = await _repo.GetByIdAsync(id);
-    if (user == null)
-        return NotFound(new { message = "Usuario no encontrado" });
-
-    user.Rol = nuevoRol;
-    await _repo.UpdateAsync(user);
-
-    return Ok(new
-    {
-        message = "Rol actualizado correctamente",
-        nuevoRol = user.Rol.ToString()
-    });
+            try
+            {
+                var user = await _userService.CambiarRolAsync(id, request.NuevoRol);
+                return Ok(new { message = "Rol actualizado correctamente", nuevoRol = user.Rol.ToString() });
+            }
+            catch (DomainException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         
         // POST api/users/crear-empleado
         [HttpPost("crear-empleado")]
-        [Authorize(Roles = "Admin,Gestor")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CrearUsuario([FromBody] CrearUsuarioRequest request)
 {
     try
@@ -110,38 +102,10 @@ namespace GymManager.API.Controllers
             Rol = usuario.Rol.ToString()
         });
     }
-    catch (Exception ex)
+    catch (DomainException ex)
     {
         return BadRequest(new { message = ex.Message });
     }
-}
-
-        [HttpPost("seed-admin")]
-        [AllowAnonymous]
-public async Task<IActionResult> SeedAdmin()
-{
-    var existing = await _repo.GetByEmailAsync("admin@seed.com");
-    if (existing != null)
-        return BadRequest("El usuario admin ya existe.");
-
-    var user = new Usuario
-    {
-        Nombre = "AdminInicial",
-        Email = "admin@seed.com",
-        Rol = RolUsuario.Admin,
-        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123"),
-        FechaAlta = DateTime.UtcNow
-    };
-
-    await _repo.CreateAsync(user);
-
-    return Ok(new
-    {
-        message = "Admin creado correctamente",
-        user.Id,
-        user.Email,
-        Rol = user.Rol.ToString()
-    });
 }
 
     }

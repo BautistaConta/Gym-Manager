@@ -1,5 +1,7 @@
 using GymManager.API.Models;
 using MongoDB.Driver;
+using GymManager.API.Options;
+using Microsoft.Extensions.Options;
 
 namespace GymManager.API.Data
 {
@@ -12,22 +14,14 @@ namespace GymManager.API.Data
         public IMongoCollection<Sucursal> Sucursales { get; }
         public IMongoCollection<NotificacionWhatsApp> NotificacionesWhatsApp { get; }
 
-        public MongoDbContext(IConfiguration configuration)
+        public MongoDbContext(IOptions<MongoDbOptions> options)
         {
-            var connectionString = configuration["MongoDB:ConnectionString"];
-            var databaseName = configuration["MongoDB:DatabaseName"];
-
-            if (string.IsNullOrWhiteSpace(connectionString))
-                throw new InvalidOperationException("MongoDB connection string no configurada");
-
-            if (string.IsNullOrWhiteSpace(databaseName))
-                throw new InvalidOperationException("MongoDB database name no configurado");
-
-            var client = new MongoClient(connectionString);
-            var database = client.GetDatabase(databaseName);
+            var settings = options.Value;
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
 
             Usuarios = database.GetCollection<Usuario>(
-                configuration["MongoDB:UsersCollectionName"] ?? "Usuarios");
+                settings.UsersCollectionName);
             Alumnos = database.GetCollection<Alumno>("Alumnos");
             Pagos = database.GetCollection<Pago>("Pagos");
             CategoriasPago = database.GetCollection<CategoriaPago>("CategoriasPago");

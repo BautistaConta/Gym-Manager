@@ -3,7 +3,8 @@ using GymApi.Models.Roles;
 using GymManager.API.Models;
 using GymManager.API.Services;
 using GymManager.API.Tenancy;
-using Microsoft.Extensions.Configuration;
+using GymManager.API.Options;
+using Microsoft.Extensions.Options;
 
 namespace GyMApi.Tests.Tenancy;
 
@@ -12,12 +13,12 @@ public class JwtServiceTests
     [Fact]
     public void Generated_token_contains_the_users_gym_id()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        var options = Options.Create(new JwtOptions
         {
-            ["Jwt:Key"] = "test_key_with_at_least_32_characters_12345",
-            ["Jwt:Issuer"] = "tests",
-            ["Jwt:Audience"] = "tests"
-        }).Build();
+            Key = "test_key_with_at_least_32_characters_12345",
+            Issuer = "tests",
+            Audience = "tests"
+        });
         var user = new Usuario
         {
             Id = "507f1f77bcf86cd799439011",
@@ -29,7 +30,7 @@ public class JwtServiceTests
             Rol = RolUsuario.Admin
         };
 
-        var token = new JwtSecurityTokenHandler().ReadJwtToken(new JwtService(configuration).GenerateToken(user));
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(new JwtService(options).GenerateToken(user));
 
         Assert.Equal("gym-a", token.Claims.Single(claim => claim.Type == GymClaims.GymId).Value);
     }

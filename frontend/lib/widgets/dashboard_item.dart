@@ -8,7 +8,7 @@ final dashboardItems = [
     title: 'Gestión de usuarios',
     icon: Icons.manage_accounts_outlined,
     route: AppRoutes.gestionUsuarios,
-    allowedRoles: [Rol.admin, Rol.gestor],
+    allowedRoles: [Rol.admin],
   ),
   DashboardItem(
     title: 'Sucursales',

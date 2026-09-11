@@ -4,22 +4,23 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using GymManager.API.Models;
 using GymManager.API.Tenancy;
+using GymManager.API.Options;
+using Microsoft.Extensions.Options;
 
 namespace GymManager.API.Services
 {
 	public class JwtService
 	{
-		private readonly IConfiguration _config;
+		private readonly JwtOptions _options;
 
-		public JwtService(IConfiguration config)
+		public JwtService(IOptions<JwtOptions> options)
 		{
-			_config = config;
+			_options = options.Value;
 		}
 
 		public string GenerateToken(Usuario user)
 		{
-			var jwtKey = _config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key no está configurado.");
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var claims = new[]
@@ -32,8 +33,8 @@ namespace GymManager.API.Services
 			};
 
 			var token = new JwtSecurityToken(
-				issuer: _config["Jwt:Issuer"],
-				audience: _config["Jwt:Audience"],
+				issuer: _options.Issuer,
+				audience: _options.Audience,
 				claims: claims,
 				expires: DateTime.UtcNow.AddDays(7),
 				signingCredentials: creds

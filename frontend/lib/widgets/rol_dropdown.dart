@@ -21,7 +21,11 @@ class RolDropdown extends StatefulWidget {
 class _RolDropdownState extends State<RolDropdown> {
   late String selected;
 
-  final options = ['Admin', 'Gestor', 'Profesor', 'Alumno'];
+  static const _administrativeRoles = ['Admin', 'Gestor'];
+
+  List<String> get options => _administrativeRoles.contains(selected)
+      ? _administrativeRoles
+      : [selected, ..._administrativeRoles];
 
   @override
   void initState() {
@@ -45,7 +49,13 @@ class _RolDropdownState extends State<RolDropdown> {
           iconEnabledColor: Theme.of(context).colorScheme.primary,
           style: const TextStyle(color: Colors.white),
           items: options
-              .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+              .map(
+                (o) => DropdownMenuItem(
+                  value: o,
+                  enabled: _administrativeRoles.contains(o),
+                  child: Text(o),
+                ),
+              )
               .toList(),
           onChanged: (v) async {
             if (v == null) return;
@@ -53,6 +63,7 @@ class _RolDropdownState extends State<RolDropdown> {
             setState(() => selected = v);
 
             final success = await widget.onRoleSelected(v);
+            if (!context.mounted) return;
 
             if (!success) {
               setState(() => selected = previous);

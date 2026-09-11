@@ -10,6 +10,8 @@ class AuthState {
 
   AuthState({this.loading = false, this.token, this.user});
 
+  bool get isAuthenticated => token != null && user != null;
+
   AuthState copyWith({bool? loading, String? token, UserModel? user}) {
     return AuthState(
       loading: loading ?? this.loading,
@@ -30,7 +32,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final token = await _authService.getToken();
     if (token != null) {
       final user = await _authService.fetchCurrentUser();
-      state = AuthState(loading: false, token: token, user: user);
+      if (user == null) {
+        await _authService.deleteToken();
+        state = AuthState(loading: false);
+      } else {
+        state = AuthState(loading: false, token: token, user: user);
+      }
     } else {
       state = AuthState(loading: false, token: null, user: null);
     }
@@ -38,15 +45,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> login(String email, String password) async {
     state = state.copyWith(loading: true);
-    final resp = await _authService.login(email, password);
-    final token = resp['token'] ?? resp['accessToken'] ?? resp['jwt'];
-    if (token != null) {
-      await _authService.saveToken(token.toString());
+    try {
+      final resp = await _authService.login(email, password);
+      final token = resp['token'];
+      if (token is! String || token.isEmpty) {
+        throw Exception('No se recibió una sesión válida.');
+      }
       final user = await _authService.fetchCurrentUser();
-      state = AuthState(loading: false, token: token.toString(), user: user);
-    } else {
-      state = state.copyWith(loading: false);
-      throw Exception('Login failed');
+      if (user == null) {
+        await _authService.deleteToken();
+        throw Exception('No se pudo validar la sesión.');
+      }
+      state = AuthState(loading: false, token: token, user: user);
+    } catch (_) {
+      state = AuthState(loading: false);
+      rethrow;
     }
   }
 

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/services/auth_service.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/dark_text_field.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
   bool loading = false;
   bool showPassword = false;
 
@@ -35,20 +35,16 @@ class _LoginPageState extends State<LoginPage> {
     }
     setState(() => loading = true);
     try {
-      final response = await _authService.login(
-        emailController.text.trim(),
-        passwordController.text,
-      );
+      await ref
+          .read(authProvider.notifier)
+          .login(emailController.text.trim(), passwordController.text);
       if (!mounted) return;
-      if (response['token'] != null) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No pudimos iniciar sesión. Revisá tus datos.'),
-          ),
-        );
-      }
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email o contraseña incorrectos.')),
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -170,16 +166,6 @@ class _LoginPageState extends State<LoginPage> {
                               )
                             : const Text('Iniciar sesión'),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: loading
-                          ? null
-                          : () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.register,
-                            ),
-                      child: const Text('¿No tenés cuenta? Crear una cuenta'),
                     ),
                   ],
                 ),

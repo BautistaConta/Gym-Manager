@@ -43,12 +43,8 @@ class AuthService {
       body: jsonEncode({"email": email, "password": password}),
     );
 
-    print("📥 Status login: ${response.statusCode}");
-    print("📥 Body login: ${response.body}");
-
-    // Manejo de errores HTTP
     if (response.statusCode != 200) {
-      throw Exception("Error en login: ${response.body}");
+      throw Exception('Email o contraseña incorrectos.');
     }
 
     final Map<String, dynamic> data = jsonDecode(response.body);
@@ -59,7 +55,6 @@ class AuthService {
       throw Exception("Token inválido o no recibido del backend.");
     }
 
-    print("🔐 Token recibido: $token");
     await saveToken(token);
 
     // Store user
@@ -71,35 +66,11 @@ class AuthService {
   }
 
   // -------------------------------
-  // REGISTER
-  // -------------------------------
-  Future<Map<String, dynamic>> register(
-    String nombre,
-    String email,
-    String password,
-  ) async {
-    final url = Uri.parse(ApiConstants.baseUrl + ApiConstants.register);
-
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "nombre": nombre,
-        "email": email,
-        "password": password,
-      }),
-    );
-
-    return jsonDecode(response.body);
-  }
-
-  // -------------------------------
   // GET CURRENT USER (/me)
   // -------------------------------
   Future<UserModel?> fetchCurrentUser() async {
     final token = await getToken();
     if (token == null) {
-      print("⚠️ No hay token almacenado, usuario no logueado.");
       return null;
     }
 
@@ -113,22 +84,17 @@ class AuthService {
       },
     );
 
-    print("📥 Status ME: ${response.statusCode}");
-    print("📥 Body ME: ${response.body}");
-
     if (response.statusCode == 200) {
       try {
         final data = jsonDecode(response.body);
         return UserModel.fromJson(data);
-      } catch (e) {
-        print("❌ Error parseando usuario: $e");
+      } catch (_) {
         return null;
       }
     }
 
     // Token expirado o inválido → limpiar storage
     if (response.statusCode == 401) {
-      print("⚠️ Token inválido o expirado, limpiando sesión.");
       await deleteToken();
     }
 

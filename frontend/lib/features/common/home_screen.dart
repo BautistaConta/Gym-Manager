@@ -14,13 +14,15 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    if (authState.loading)
+    if (authState.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final user = authState.user;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(
         body: Center(child: Text('Usuario no autenticado')),
       );
+    }
     final visibleItems = dashboardItems
         .where((item) => item.allowedRoles.contains(user.rol))
         .toList();
@@ -56,6 +58,19 @@ class HomeScreen extends ConsumerWidget {
                 icon: Icons.verified_user_outlined,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (!context.mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (_) => false,
+              );
+            },
           ),
         ],
       ),

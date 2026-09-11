@@ -1,10 +1,9 @@
-﻿using GymApi.Models.Roles;
-using GymManager.API.Models;
+using System.ComponentModel.DataAnnotations;
 
-namespace GymManager.API.DTOs
+namespace GymManager.API.DTOs;
+
+public class UpdateRolRequest
 {
-    public class UpdateRolRequest
-    {
-        public string NuevoRol { get; set; } =string.Empty;
-    }
+    [Required]
+    public string NuevoRol { get; set; } = string.Empty;
 }

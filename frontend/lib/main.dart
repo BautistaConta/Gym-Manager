@@ -18,8 +18,8 @@ class MyApp extends StatelessWidget {
       title: 'Gym Manager',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.login,
-      routes: AppRoutes.routes,
+      initialRoute: AppRoutes.home,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

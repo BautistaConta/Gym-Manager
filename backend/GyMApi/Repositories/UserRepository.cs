@@ -2,10 +2,11 @@ using GymManager.API.Data;
 using GymManager.API.Models;
 using GymManager.API.Tenancy;
 using MongoDB.Driver;
+using GymApi.Models.Roles;
 
 namespace GymManager.API.Repositories;
 
-public class UserRepository
+public class UserRepository : IUserRepository
 {
     private readonly IMongoCollection<Usuario> _usuarios;
     private readonly IGymContext _gymContext;
@@ -34,6 +35,10 @@ public class UserRepository
 
     public Task<List<Usuario>> GetAllAsync() =>
         _usuarios.Find(TenantFilters.ForGym<Usuario>(_gymContext.GymId)).ToListAsync();
+
+    public Task<bool> AnyAdminAsync() => _usuarios.Find(
+        TenantFilters.And<Usuario>(_gymContext.GymId,
+            Builders<Usuario>.Filter.Eq(u => u.Rol, RolUsuario.Admin))).AnyAsync();
 
     public Task UpdateAsync(Usuario user)
     {
