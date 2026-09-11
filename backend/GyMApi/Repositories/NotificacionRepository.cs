@@ -1,5 +1,6 @@
 using GymManager.API.Data;
 using GymManager.API.Models;
+using GymManager.API.Tenancy;
 using MongoDB.Driver;
 
 namespace GymManager.API.Repositories;
@@ -7,19 +8,43 @@ namespace GymManager.API.Repositories;
 public class NotificacionRepository : INotificacionRepository
 {
     private readonly IMongoCollection<NotificacionWhatsApp> _collection;
-    public NotificacionRepository(MongoDbContext context) => _collection = context.NotificacionesWhatsApp;
-    public Task CreateAsync(NotificacionWhatsApp notificacion) => _collection.InsertOneAsync(notificacion);
-    public async Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId)
+    private readonly IGymContext _gymContext;
+
+    public NotificacionRepository(MongoDbContext context, IGymContext gymContext)
     {
-        var filter = Builders<NotificacionWhatsApp>.Filter.Empty;
+        _collection = context.NotificacionesWhatsApp;
+        _gymContext = gymContext;
+    }
+
+    public Task CreateAsync(NotificacionWhatsApp notificacion)
+    {
+        TenantFilters.Stamp(notificacion, _gymContext.GymId);
+        return _collection.InsertOneAsync(notificacion);
+    }
+
+    public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId)
+    {
+        var filter = TenantFilters.ForGym<NotificacionWhatsApp>(_gymContext.GymId);
         if (estado.HasValue) filter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, estado.Value);
         if (!string.IsNullOrWhiteSpace(alumnoId)) filter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.AlumnoId, alumnoId);
-        return await _collection.Find(filter).SortByDescending(n => n.FechaCreacion).ToListAsync();
+        return _collection.Find(filter).SortByDescending(n => n.FechaCreacion).ToListAsync();
     }
-    public async Task<NotificacionWhatsApp?> GetByIdAsync(string id) => await _collection.Find(n => n.Id == id).FirstOrDefaultAsync();
+
+    public async Task<NotificacionWhatsApp?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
+
     public Task<bool> ExistsSinceAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) =>
-        _collection.Find(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.FechaCreacion >= desde).AnyAsync();
+        _collection.Find(With(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.FechaCreacion >= desde)).AnyAsync();
+
     public Task<bool> ExistsEnviadaDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) =>
-        _collection.Find(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.Estado == EstadoNotificacionWhatsApp.Enviado && n.FechaCreacion >= desde).AnyAsync();
-    public Task UpdateAsync(NotificacionWhatsApp notificacion) => _collection.ReplaceOneAsync(n => n.Id == notificacion.Id, notificacion);
+        _collection.Find(With(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.Estado == EstadoNotificacionWhatsApp.Enviado && n.FechaCreacion >= desde)).AnyAsync();
+
+    public Task UpdateAsync(NotificacionWhatsApp notificacion)
+    {
+        TenantFilters.EnsureOwned(notificacion, _gymContext.GymId);
+        return _collection.ReplaceOneAsync(ById(notificacion.Id), notificacion);
+    }
+
+    private FilterDefinition<NotificacionWhatsApp> ById(string id) => With(n => n.Id == id);
+    private FilterDefinition<NotificacionWhatsApp> With(System.Linq.Expressions.Expression<Func<NotificacionWhatsApp, bool>> filter) =>
+        TenantFilters.And<NotificacionWhatsApp>(_gymContext.GymId, Builders<NotificacionWhatsApp>.Filter.Where(filter));
 }

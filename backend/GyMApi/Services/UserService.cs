@@ -23,7 +23,7 @@ namespace GymManager.API.Services
             var user = new Usuario
             {
                 Nombre = request.Nombre,
-                Email = request.Email,
+                Email = request.Email.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Rol = rol
             };
@@ -54,7 +54,7 @@ namespace GymManager.API.Services
     var usuario = new Usuario
     {
         Nombre = request.Nombre,
-        Email = request.Email,
+        Email = request.Email.Trim(),
         PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
         Rol = rol,
         FechaAlta = DateTime.UtcNow

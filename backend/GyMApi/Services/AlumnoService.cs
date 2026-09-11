@@ -8,11 +8,13 @@ public class AlumnoService
 {
     private readonly AlumnoRepository _alumnos;
     private readonly PagoRepository _pagos;
+    private readonly SucursalRepository _sucursales;
 
-    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos)
+    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales)
     {
         _alumnos = alumnos;
         _pagos = pagos;
+        _sucursales = sucursales;
     }
 
     public Task<List<Alumno>> GetAllAsync() => _alumnos.GetAllAsync();
@@ -28,13 +30,20 @@ public class AlumnoService
         if (await _alumnos.GetByDniAsync(dni) is not null)
             throw new DomainException("Ya existe un alumno con ese DNI.");
 
+        var sucursalPrincipalId = string.IsNullOrWhiteSpace(request.SucursalPrincipalId)
+            ? null
+            : request.SucursalPrincipalId.Trim();
+        if (sucursalPrincipalId is not null && await _sucursales.GetByIdAsync(sucursalPrincipalId) is null)
+            throw new DomainException("La sucursal principal no existe en el gimnasio actual.");
+
         var alumno = new Alumno
         {
             Nombre = request.Nombre.Trim(),
             DNI = dni,
             Telefono = request.Telefono.Trim(),
             FechaAlta = DateTime.UtcNow,
-            Activo = true
+            Activo = true,
+            SucursalPrincipalId = sucursalPrincipalId
         };
         await _alumnos.CreateAsync(alumno);
         return alumno;

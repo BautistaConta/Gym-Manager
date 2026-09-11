@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using GymManager.API.Models;
+using GymManager.API.Tenancy;
 
 namespace GymManager.API.Services
 {
@@ -17,7 +18,8 @@ namespace GymManager.API.Services
 
 		public string GenerateToken(Usuario user)
 		{
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+			var jwtKey = _config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key no está configurado.");
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var claims = new[]
@@ -25,6 +27,7 @@ namespace GymManager.API.Services
 				new Claim(JwtRegisteredClaimNames.Sub, user.Id ?? string.Empty),
                 new Claim(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
                 new Claim("nombre", user.Nombre ?? string.Empty),
+                new Claim(GymClaims.GymId, user.GymId),
                 new Claim(ClaimTypes.Role, user.Rol.ToString())
 			};
 

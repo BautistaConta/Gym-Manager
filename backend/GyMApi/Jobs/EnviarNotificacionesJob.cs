@@ -24,6 +24,10 @@ public class EnviarNotificacionesJob : BackgroundService
     {
         try
         {
+            // Etapa piloto: el IGymContext scoped usa este tenant. En multi-tenant real se reemplaza por iteración de tenants.
+            var pilotGymId = _configuration["MultiTenancy:PilotGymId"]
+                ?? throw new InvalidOperationException("MultiTenancy:PilotGymId no está configurado.");
+            _logger.LogDebug("Ejecutando envío de notificaciones para el gimnasio piloto {GymId}.", pilotGymId);
             using var scope = _scopeFactory.CreateScope();
             var notificaciones = scope.ServiceProvider.GetRequiredService<NotificacionService>();
             var sender = scope.ServiceProvider.GetRequiredService<IWhatsAppSender>();

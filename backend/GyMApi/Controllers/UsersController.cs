@@ -53,8 +53,6 @@ namespace GymManager.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
-            var rawToken = Request.Headers["Authorization"].ToString();
-Console.WriteLine("TOKEN RECIBIDO POR .NET: " + rawToken);
             var users = await _repo.GetAllAsync();
 
             var response = users.Select(u => new

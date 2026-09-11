@@ -24,6 +24,10 @@ public class VencimientosNotificacionJob : BackgroundService
     {
         try
         {
+            // Etapa piloto: el IGymContext scoped usa este tenant. En multi-tenant real se reemplaza por iteración de tenants.
+            var pilotGymId = _configuration["MultiTenancy:PilotGymId"]
+                ?? throw new InvalidOperationException("MultiTenancy:PilotGymId no está configurado.");
+            _logger.LogDebug("Evaluando vencimientos para el gimnasio piloto {GymId}.", pilotGymId);
             using var scope = _scopeFactory.CreateScope();
             var alumnos = scope.ServiceProvider.GetRequiredService<AlumnoRepository>();
             var pagos = scope.ServiceProvider.GetRequiredService<PagoRepository>();

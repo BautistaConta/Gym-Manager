@@ -1,40 +1,42 @@
 using GymManager.API.Data;
 using GymManager.API.Models;
-using MongoDB.Driver;
+using GymManager.API.Tenancy;
 using MongoDB.Bson;
+using MongoDB.Driver;
 
-namespace GymManager.API.Repositories
+namespace GymManager.API.Repositories;
+
+public class CategoriaPagoRepository
 {
-    public class CategoriaPagoRepository
+    private readonly IMongoCollection<CategoriaPago> _collection;
+    private readonly IGymContext _gymContext;
+
+    public CategoriaPagoRepository(MongoDbContext context, IGymContext gymContext)
     {
-        private readonly IMongoCollection<CategoriaPago> _collection;
-
-        public CategoriaPagoRepository(MongoDbContext context)
-        {
-            _collection = context.CategoriasPago;
-        }
-
-        public async Task CreateAsync(CategoriaPago categoria)
-        {
-            await _collection.InsertOneAsync(categoria);
-        }
-
-        public async Task<List<CategoriaPago>> GetAllAsync()
-        {
-            return await _collection.Find(_ => true).ToListAsync();
-        }
-
-        public async Task<CategoriaPago?> GetByIdAsync(string id)
-        {
-            return await _collection.Find(c => c.Id == id).FirstOrDefaultAsync();
-        }
-
-        public async Task UpdateAsync(CategoriaPago categoria)
-        {
-            await _collection.ReplaceOneAsync(c => c.Id == categoria.Id, categoria);
-        }
-
-        public async Task DeleteLegacyWithoutIdAsync() =>
-            await _collection.DeleteOneAsync(Builders<CategoriaPago>.Filter.Eq("_id", BsonNull.Value));
+        _collection = context.CategoriasPago;
+        _gymContext = gymContext;
     }
+
+    public Task CreateAsync(CategoriaPago categoria)
+    {
+        TenantFilters.Stamp(categoria, _gymContext.GymId);
+        return _collection.InsertOneAsync(categoria);
+    }
+
+    public Task<List<CategoriaPago>> GetAllAsync() =>
+        _collection.Find(TenantFilters.ForGym<CategoriaPago>(_gymContext.GymId)).ToListAsync();
+
+    public async Task<CategoriaPago?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
+
+    public Task UpdateAsync(CategoriaPago categoria)
+    {
+        TenantFilters.EnsureOwned(categoria, _gymContext.GymId);
+        return _collection.ReplaceOneAsync(ById(categoria.Id), categoria);
+    }
+
+    public Task DeleteLegacyWithoutIdAsync() => _collection.DeleteOneAsync(
+        TenantFilters.And<CategoriaPago>(_gymContext.GymId, Builders<CategoriaPago>.Filter.Eq("_id", BsonNull.Value)));
+
+    private FilterDefinition<CategoriaPago> ById(string id) =>
+        TenantFilters.And<CategoriaPago>(_gymContext.GymId, Builders<CategoriaPago>.Filter.Eq(c => c.Id, id));
 }

@@ -11,5 +11,7 @@ public class CrearAlumnoRequest
 
     [Required]
     public string Telefono { get; set; } = null!;
+
+    public string? SucursalPrincipalId { get; set; }
 }
 }

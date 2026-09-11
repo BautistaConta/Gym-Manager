@@ -4,20 +4,24 @@ using GymApi.Models.Roles;
 
 namespace GymManager.API.Models
 {
-    public class Usuario
+    public class Usuario : IGymOwned
     {
+        public string GymId { get; set; } = null!;
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
         [BsonElement("nombre")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = null!;
 
         [BsonElement("email")]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
+
+        [BsonElement("emailNormalizado")]
+        public string EmailNormalizado { get; set; } = null!;
 
         [BsonElement("passwordHash")]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = null!;
 
         [BsonElement("rol")]
         public RolUsuario Rol { get; set; } = RolUsuario.Alumno;

@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GymApi", "GymApi.csproj", "{82BEFF3C-6545-41F5-9D2E-5DDA0FA79C94}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GyMApi.Tests", "..\GyMApi.Tests\GyMApi.Tests.csproj", "{2990A4CA-8B5D-4142-9814-E12E6BF1EA5D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{82BEFF3C-6545-41F5-9D2E-5DDA0FA79C94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82BEFF3C-6545-41F5-9D2E-5DDA0FA79C94}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82BEFF3C-6545-41F5-9D2E-5DDA0FA79C94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2990A4CA-8B5D-4142-9814-E12E6BF1EA5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2990A4CA-8B5D-4142-9814-E12E6BF1EA5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2990A4CA-8B5D-4142-9814-E12E6BF1EA5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2990A4CA-8B5D-4142-9814-E12E6BF1EA5D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

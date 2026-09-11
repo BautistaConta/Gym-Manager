@@ -53,7 +53,7 @@ public class NotificacionService
     {
         if (!alumno.NotificacionesHabilitadas) throw new DomainException("El alumno no tiene notificaciones habilitadas.");
         ValidatePhone(alumno.Telefono);
-        var notificacion = new NotificacionWhatsApp { AlumnoId = alumno.Id, Tipo = tipo, Telefono = alumno.Telefono, Mensaje = mensaje, Estado = EstadoNotificacionWhatsApp.Pendiente, FechaCreacion = DateTime.UtcNow };
+        var notificacion = new NotificacionWhatsApp { GymId = alumno.GymId, AlumnoId = alumno.Id, Tipo = tipo, Telefono = alumno.Telefono, Mensaje = mensaje, Estado = EstadoNotificacionWhatsApp.Pendiente, FechaCreacion = DateTime.UtcNow };
         await _notificaciones.CreateAsync(notificacion);
         return notificacion;
     }
