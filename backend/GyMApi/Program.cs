@@ -90,6 +90,7 @@ builder.Services.AddScoped<CategoriaPagoRepository>();
 builder.Services.AddScoped<AlumnoRepository>();
 builder.Services.AddScoped<PagoRepository>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
+builder.Services.AddScoped<INotificacionDatos, NotificacionDatos>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PagoService>();
 builder.Services.AddScoped<AlumnoService>();

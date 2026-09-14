@@ -32,6 +32,9 @@ class AlumnosService {
     required String nombre,
     required String dni,
     required String telefono,
+    required bool notificacionesHabilitadas,
+    required bool consentimientoConfirmado,
+    String? medioConsentimiento,
     String? sucursalPrincipalId,
   }) async {
     final token = await _authService.getToken();
@@ -48,6 +51,9 @@ class AlumnosService {
         'dni': dni,
         'telefono': telefono,
         'sucursalPrincipalId': sucursalPrincipalId,
+        'notificacionesHabilitadas': notificacionesHabilitadas,
+        'consentimientoConfirmado': consentimientoConfirmado,
+        'medioConsentimiento': medioConsentimiento,
       }),
     );
 
@@ -136,5 +142,34 @@ class AlumnosService {
     );
     if (response.statusCode != 204)
       throw Exception('No se pudo desactivar el alumno: ${response.body}');
+  }
+
+  Future<void> updateNotificaciones(
+    String id, {
+    required bool habilitadas,
+    required bool consentimientoConfirmado,
+    String? medioConsentimiento,
+  }) async {
+    final token = await _authService.getToken();
+    final response = await http.put(
+      Uri.parse('${ApiConstants.baseUrl}/api/alumnos/$id/notificaciones'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'notificacionesHabilitadas': habilitadas,
+        'consentimientoConfirmado': consentimientoConfirmado,
+        'medioConsentimiento': medioConsentimiento,
+      }),
+    );
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(
+        body is Map
+            ? body['message'] ?? 'No se pudo actualizar el consentimiento.'
+            : 'No se pudo actualizar el consentimiento.',
+      );
+    }
   }
 }

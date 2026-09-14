@@ -16,10 +16,15 @@ public class NotificacionRepository : INotificacionRepository
         _gymContext = gymContext;
     }
 
-    public Task CreateAsync(NotificacionWhatsApp notificacion)
+    public async Task<NotificacionWhatsApp> CreateIfAbsentAsync(NotificacionWhatsApp notificacion)
     {
         TenantFilters.Stamp(notificacion, _gymContext.GymId);
-        return _collection.InsertOneAsync(notificacion);
+        try { await _collection.InsertOneAsync(notificacion); return notificacion; }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            return await _collection.Find(With(n => n.PagoId == notificacion.PagoId && n.Tipo == notificacion.Tipo))
+                .FirstAsync();
+        }
     }
 
     public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId)
@@ -32,16 +37,46 @@ public class NotificacionRepository : INotificacionRepository
 
     public async Task<NotificacionWhatsApp?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
 
-    public Task<bool> ExistsSinceAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) =>
-        _collection.Find(With(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.FechaCreacion >= desde)).AnyAsync();
-
-    public Task<bool> ExistsEnviadaDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) =>
-        _collection.Find(With(n => n.AlumnoId == alumnoId && n.Tipo == tipo && n.Estado == EstadoNotificacionWhatsApp.Enviado && n.FechaCreacion >= desde)).AnyAsync();
-
-    public Task UpdateAsync(NotificacionWhatsApp notificacion)
+    public async Task<NotificacionWhatsApp?> ClaimNextAsync(DateTime nowUtc)
     {
-        TenantFilters.EnsureOwned(notificacion, _gymContext.GymId);
-        return _collection.ReplaceOneAsync(ById(notificacion.Id), notificacion);
+        var filter = With(n => n.Estado == EstadoNotificacionWhatsApp.Pendiente &&
+            (n.Tipo == TipoNotificacionWhatsApp.PorVencer || n.Tipo == TipoNotificacionWhatsApp.Vencido) &&
+            n.PagoId != null && n.PagoId != "");
+        var update = Builders<NotificacionWhatsApp>.Update
+            .Set(n => n.Estado, EstadoNotificacionWhatsApp.Procesando)
+            .Set(n => n.FechaInicioProcesamiento, nowUtc)
+            .Set(n => n.FechaActualizacion, nowUtc)
+            .Inc(n => n.Intentos, 1);
+        return await _collection.FindOneAndUpdateAsync(filter, update, new FindOneAndUpdateOptions<NotificacionWhatsApp>
+        {
+            Sort = Builders<NotificacionWhatsApp>.Sort.Ascending(n => n.FechaCreacion),
+            ReturnDocument = ReturnDocument.After
+        });
+    }
+
+    public async Task<bool> TransitionAsync(string id, EstadoNotificacionWhatsApp expected, EstadoNotificacionWhatsApp next,
+        DateTime nowUtc, string? error = null, string? providerMessageId = null)
+    {
+        var filter = With(n => n.Id == id && n.Estado == expected);
+        var update = Builders<NotificacionWhatsApp>.Update
+            .Set(n => n.Estado, next)
+            .Set(n => n.FechaActualizacion, nowUtc)
+            .Set(n => n.ErrorDetalle, error)
+            .Set(n => n.ProviderMessageId, providerMessageId);
+        if (next == EstadoNotificacionWhatsApp.Enviado) update = update.Set(n => n.FechaEnvio, nowUtc);
+        if (next == EstadoNotificacionWhatsApp.RequiereRevision) update = update.Set(n => n.FechaRevision, nowUtc);
+        return (await _collection.UpdateOneAsync(filter, update)).ModifiedCount == 1;
+    }
+
+    public async Task<long> MarkProcessingForReviewAsync(DateTime nowUtc)
+    {
+        var filter = With(n => n.Estado == EstadoNotificacionWhatsApp.Procesando);
+        var update = Builders<NotificacionWhatsApp>.Update
+            .Set(n => n.Estado, EstadoNotificacionWhatsApp.RequiereRevision)
+            .Set(n => n.FechaRevision, nowUtc)
+            .Set(n => n.FechaActualizacion, nowUtc)
+            .Set(n => n.ErrorDetalle, "El proceso se interrumpió durante un envío; verificar en Twilio antes de actuar.");
+        return (await _collection.UpdateManyAsync(filter, update)).ModifiedCount;
     }
 
     private FilterDefinition<NotificacionWhatsApp> ById(string id) => With(n => n.Id == id);

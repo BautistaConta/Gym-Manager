@@ -82,7 +82,7 @@ class _GestionPagosScreenState extends State<GestionPagosScreen> {
         SnackBar(
           content: Text(
             error == null
-                ? 'Recordatorio enviado por WhatsApp.'
+                ? 'Recordatorio programado para envío por WhatsApp.'
                 : 'No se pudo enviar: $error',
           ),
         ),

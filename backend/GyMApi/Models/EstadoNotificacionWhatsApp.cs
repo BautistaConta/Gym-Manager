@@ -4,5 +4,8 @@ public enum EstadoNotificacionWhatsApp
 {
     Pendiente,
     Enviado,
-    Fallido
+    Fallido,
+    Procesando,
+    RequiereRevision,
+    Descartado
 }

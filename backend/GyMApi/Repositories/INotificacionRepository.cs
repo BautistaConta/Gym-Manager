@@ -4,10 +4,11 @@ namespace GymManager.API.Repositories;
 
 public interface INotificacionRepository
 {
-    Task CreateAsync(NotificacionWhatsApp notificacion);
+    Task<NotificacionWhatsApp> CreateIfAbsentAsync(NotificacionWhatsApp notificacion);
     Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId);
     Task<NotificacionWhatsApp?> GetByIdAsync(string id);
-    Task<bool> ExistsSinceAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde);
-    Task<bool> ExistsEnviadaDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde);
-    Task UpdateAsync(NotificacionWhatsApp notificacion);
+    Task<NotificacionWhatsApp?> ClaimNextAsync(DateTime nowUtc);
+    Task<bool> TransitionAsync(string id, EstadoNotificacionWhatsApp expected, EstadoNotificacionWhatsApp next,
+        DateTime nowUtc, string? error = null, string? providerMessageId = null);
+    Task<long> MarkProcessingForReviewAsync(DateTime nowUtc);
 }

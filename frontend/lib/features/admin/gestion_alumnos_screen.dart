@@ -8,6 +8,8 @@ import '../../models/alumno_model.dart';
 import '../../models/sucursal_model.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/modals/create_alumno_modal.dart';
+import '../../widgets/modals/edit_alumno_modal.dart';
+import '../../widgets/modals/edit_consentimiento_modal.dart';
 
 class GestionAlumnosScreen extends StatefulWidget {
   const GestionAlumnosScreen({super.key});
@@ -86,93 +88,37 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
   }
 
   Future<void> _editAlumno(AlumnoModel alumno) async {
-    final nombre = TextEditingController(text: alumno.nombre);
-    final telefono = TextEditingController(text: alumno.telefono);
-    var activo = alumno.activo;
-    var sucursalPrincipalId =
-        sucursales.any((s) => s.id == alumno.sucursalPrincipalId)
-        ? alumno.sucursalPrincipalId
-        : null;
-    final ok = await showDialog<bool>(
+    final resultado = await showDialog<AlumnoEdicion>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Editar alumno'),
-          content: SizedBox(
-            width: 430,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nombre,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: telefono,
-                  decoration: const InputDecoration(
-                    labelText: 'Teléfono',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: sucursalPrincipalId ?? '',
-                  decoration: const InputDecoration(
-                    labelText: 'Sucursal principal',
-                  ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: '',
-                      child: Text('Sin asignar'),
-                    ),
-                    ...sucursales.map(
-                      (s) =>
-                          DropdownMenuItem(value: s.id, child: Text(s.nombre)),
-                    ),
-                  ],
-                  onChanged: (value) =>
-                      setDialogState(() => sucursalPrincipalId = value),
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Alumno activo'),
-                  subtitle: const Text('Puede acceder y registrar pagos'),
-                  value: activo,
-                  onChanged: (value) => setDialogState(() => activo = value),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Guardar cambios'),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => EditAlumnoModal(alumno: alumno, sucursales: sucursales),
     );
-    final newName = nombre.text.trim();
-    final newPhone = telefono.text.trim();
-    nombre.dispose();
-    telefono.dispose();
-    if (ok != true) return;
+    if (resultado == null || !mounted) return;
     try {
       await _service.updateAlumno(
         alumno.id,
-        nombre: newName,
-        telefono: newPhone,
-        activo: activo,
-        sucursalPrincipalId: sucursalPrincipalId,
+        nombre: resultado.nombre,
+        telefono: resultado.telefono,
+        activo: resultado.activo,
+        sucursalPrincipalId: resultado.sucursalPrincipalId,
+      );
+      await _load();
+    } catch (e) {
+      _showError(e);
+    }
+  }
+
+  Future<void> _editNotificaciones(AlumnoModel alumno) async {
+    final resultado = await showDialog<ConsentimientoEdicion>(
+      context: context,
+      builder: (_) => EditConsentimientoModal(alumno: alumno),
+    );
+    if (resultado == null || !mounted) return;
+    try {
+      await _service.updateNotificaciones(
+        alumno.id,
+        habilitadas: resultado.habilitadas,
+        consentimientoConfirmado: resultado.confirmado,
+        medioConsentimiento: resultado.medio,
       );
       await _load();
     } catch (e) {
@@ -405,6 +351,16 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                                         ? 'Sin teléfono'
                                         : a.telefono,
                                   ),
+                                  InfoRow(
+                                    icon: Icons.chat_outlined,
+                                    label: 'WhatsApp',
+                                    value:
+                                        a.notificacionesHabilitadas &&
+                                            a.fechaConsentimientoNotificacionesUtc !=
+                                                null
+                                        ? 'Consentimiento registrado'
+                                        : 'Sin consentimiento registrado',
+                                  ),
                                   if (a.fechaVencimiento != null)
                                     InfoRow(
                                       icon: Icons.event_outlined,
@@ -424,6 +380,11 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                                     label: const Text('Editar'),
                                   ),
                                   const SizedBox(width: 8),
+                                  TextButton.icon(
+                                    onPressed: () => _editNotificaciones(a),
+                                    icon: const Icon(Icons.chat_outlined),
+                                    label: const Text('WhatsApp'),
+                                  ),
                                   IconButton(
                                     tooltip: 'Desactivar alumno',
                                     onPressed: a.activo

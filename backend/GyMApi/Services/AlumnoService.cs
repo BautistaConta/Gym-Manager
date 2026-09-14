@@ -34,6 +34,9 @@ public class AlumnoService
                 Telefono = alumno.Telefono,
                 Activo = alumno.Activo,
                 SucursalPrincipalId = alumno.SucursalPrincipalId,
+                NotificacionesHabilitadas = alumno.NotificacionesHabilitadas,
+                FechaConsentimientoNotificacionesUtc = alumno.FechaConsentimientoNotificacionesUtc,
+                MedioConsentimientoNotificaciones = alumno.MedioConsentimientoNotificaciones,
                 Estado = cuota.Estado.ToString(),
                 FechaVencimiento = cuota.FechaVencimiento
             };
@@ -46,6 +49,7 @@ public class AlumnoService
     public async Task<Alumno> CreateAsync(CrearAlumnoRequest request)
     {
         Validate(request.Nombre, request.DNI, request.Telefono);
+        ConsentimientoNotificaciones.Validate(request.NotificacionesHabilitadas, request.MedioConsentimiento, request.ConsentimientoConfirmado);
         NotificacionService.ValidatePhone(request.Telefono);
         var dni = request.DNI.Trim();
         if (await _alumnos.GetByDniAsync(dni) is not null)
@@ -60,7 +64,10 @@ public class AlumnoService
             Telefono = request.Telefono.Trim(),
             FechaAlta = DateTime.UtcNow,
             Activo = true,
-            SucursalPrincipalId = sucursalPrincipalId
+            SucursalPrincipalId = sucursalPrincipalId,
+            NotificacionesHabilitadas = request.NotificacionesHabilitadas,
+            FechaConsentimientoNotificacionesUtc = request.NotificacionesHabilitadas ? _cuotas.AhoraUtc : null,
+            MedioConsentimientoNotificaciones = request.NotificacionesHabilitadas ? request.MedioConsentimiento!.Trim() : null
         };
         await _alumnos.CreateAsync(alumno);
         return alumno;
@@ -86,10 +93,13 @@ public class AlumnoService
         await _alumnos.UpdateAsync(alumno);
     }
 
-    public async Task<Alumno> ActualizarNotificacionesAsync(string id, bool habilitadas)
+    public async Task<Alumno> ActualizarNotificacionesAsync(string id, bool habilitadas, string? medioConsentimiento, bool consentimientoConfirmado)
     {
+        ConsentimientoNotificaciones.Validate(habilitadas, medioConsentimiento, consentimientoConfirmado);
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         alumno.NotificacionesHabilitadas = habilitadas;
+        alumno.FechaConsentimientoNotificacionesUtc = habilitadas ? _cuotas.AhoraUtc : null;
+        alumno.MedioConsentimientoNotificaciones = habilitadas ? medioConsentimiento!.Trim() : null;
         await _alumnos.UpdateAsync(alumno);
         return alumno;
     }
@@ -123,4 +133,5 @@ public class AlumnoService
         if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(dni) || string.IsNullOrWhiteSpace(telefono))
             throw new DomainException("Nombre, DNI y teléfono son obligatorios.");
     }
+
 }

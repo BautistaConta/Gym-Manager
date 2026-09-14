@@ -19,7 +19,7 @@ public class AlumnosController : ControllerBase
     [HttpGet("{id}/estado")] public async Task<IActionResult> GetEstado(string id) => await ExecuteAsync(() => _service.GetEstadoAsync(id));
     [HttpPost] public async Task<IActionResult> Create(CrearAlumnoRequest request) => await ExecuteAsync(() => _service.CreateAsync(request), value => CreatedAtAction(nameof(GetById), new { id = value.Id }, value));
     [HttpPut("{id}")] public async Task<IActionResult> Update(string id, ActualizarAlumnoRequest request) => await ExecuteAsync(() => _service.UpdateAsync(id, request));
-    [HttpPut("{id}/notificaciones")] public async Task<IActionResult> UpdateNotificaciones(string id, ActualizarNotificacionesAlumnoRequest request) => await ExecuteAsync(() => _service.ActualizarNotificacionesAsync(id, request.NotificacionesHabilitadas));
+    [HttpPut("{id}/notificaciones")] public async Task<IActionResult> UpdateNotificaciones(string id, ActualizarNotificacionesAlumnoRequest request) => await ExecuteAsync(() => _service.ActualizarNotificacionesAsync(id, request.NotificacionesHabilitadas, request.MedioConsentimiento, request.ConsentimientoConfirmado));
     [HttpDelete("{id}")] public async Task<IActionResult> Delete(string id) { try { await _service.DeactivateAsync(id); return NoContent(); } catch (DomainException ex) { return NotFound(new { message = ex.Message }); } }
     private async Task<IActionResult> ExecuteAsync<T>(Func<Task<T>> action, Func<T, IActionResult>? success = null) { try { var result = await action(); return success?.Invoke(result) ?? Ok(result); } catch (DomainException ex) { return BadRequest(new { message = ex.Message }); } }
 }

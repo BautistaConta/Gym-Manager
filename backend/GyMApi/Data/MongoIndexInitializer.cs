@@ -47,6 +47,19 @@ public sealed class MongoIndexInitializer
 
         await _context.NotificacionesWhatsApp.Indexes.CreateManyAsync(new[]
         {
+            new CreateIndexModel<NotificacionWhatsApp>(
+                Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.PagoId).Ascending(n => n.Tipo),
+                new CreateIndexOptions<NotificacionWhatsApp>
+                {
+                    Name = "ux_notificaciones_gym_pago_tipo",
+                    Unique = true,
+                    // Las notificaciones anteriores al cambio no tienen PagoId.
+                    PartialFilterExpression = new BsonDocumentFilterDefinition<NotificacionWhatsApp>(new BsonDocument
+                    {
+                        { "GymId", new BsonDocument("$type", "string") },
+                        { "PagoId", new BsonDocument("$type", "string") }
+                    })
+                }),
             new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.Estado).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_estado_fecha" }),
             new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.AlumnoId).Ascending(n => n.Tipo).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_alumno_tipo_fecha" })
         }, cancellationToken);

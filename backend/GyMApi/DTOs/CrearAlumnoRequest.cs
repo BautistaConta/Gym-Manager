@@ -13,5 +13,8 @@ public class CrearAlumnoRequest
     public string Telefono { get; set; } = null!;
 
     public string? SucursalPrincipalId { get; set; }
+    public bool NotificacionesHabilitadas { get; set; } = true;
+    public bool ConsentimientoConfirmado { get; set; }
+    public string? MedioConsentimiento { get; set; }
 }
 }

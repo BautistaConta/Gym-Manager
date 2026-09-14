@@ -11,7 +11,6 @@ namespace GymManager.API.Services
         private readonly CategoriaPagoRepository _categoriaRepo;
         private readonly SucursalRepository _sucursalRepo;
         private readonly NotificacionService _notificacionService;
-        private readonly ILogger<PagoService> _logger;
         private readonly CuotaCalculator _cuotas;
 
         public PagoService(
@@ -20,7 +19,6 @@ namespace GymManager.API.Services
             CategoriaPagoRepository categoriaRepo,
             SucursalRepository sucursalRepo,
             NotificacionService notificacionService,
-            ILogger<PagoService> logger,
             CuotaCalculator cuotas)
         {
             _pagoRepo = pagoRepo;
@@ -28,7 +26,6 @@ namespace GymManager.API.Services
             _categoriaRepo = categoriaRepo;
             _sucursalRepo = sucursalRepo;
             _notificacionService = notificacionService;
-            _logger = logger;
             _cuotas = cuotas;
         }
 
@@ -77,12 +74,6 @@ namespace GymManager.API.Services
 
             await _pagoRepo.CreateAsync(pago);
 
-            if (alumno.NotificacionesHabilitadas)
-            {
-                try { await _notificacionService.EncolarPagoConfirmadoAsync(alumno, pago); }
-                catch (DomainException ex) { _logger.LogWarning(ex, "El pago {PagoId} fue registrado, pero no se pudo encolar su notificación.", pago.Id); }
-            }
-
             return pago;
         }
 
@@ -99,10 +90,7 @@ namespace GymManager.API.Services
         {
             var pago = await _pagoRepo.GetByIdAsync(pagoId) ?? throw new DomainException("Pago no encontrado.");
             var alumno = await _alumnoRepo.GetByIdAsync(pago.AlumnoId) ?? throw new DomainException("Alumno no encontrado.");
-            if (!alumno.Activo) throw new DomainException("No se puede enviar un recordatorio a un alumno inactivo.");
-            if (await _notificacionService.ExisteEnviadaDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.PorVencer, DateTime.UtcNow.AddHours(-24)) || await _notificacionService.ExisteEnviadaDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.Vencido, DateTime.UtcNow.AddHours(-24)))
-                throw new DomainException("Ya se envió un recordatorio a este alumno en las últimas 24 horas.");
-            return await _notificacionService.EnviarRecordatorioManualAsync(alumno, pago.PeriodoHasta);
+            return await _notificacionService.EncolarRecordatorioManualAsync(alumno, pago);
         }
 
         private static PagoListadoResponse ToListadoResponse(Pago pago, Alumno? alumno, Sucursal? sucursal, CategoriaPago? categoria) => new()

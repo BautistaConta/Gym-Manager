@@ -20,11 +20,11 @@ public class TwilioWhatsAppSender : IWhatsAppSender
 
     public async Task<WhatsAppSendResult> SendAsync(string telefono, string mensaje, TipoNotificacionWhatsApp tipo, CancellationToken cancellationToken = default)
     {
-        if (!_options.Enabled) return new(false, "El envío de Twilio está deshabilitado en la configuración.");
-        if (!E164.IsMatch(telefono)) return new(false, "El teléfono no tiene formato E.164 válido.");
-        if (string.IsNullOrWhiteSpace(mensaje)) return new(false, "El mensaje no puede estar vacío.");
-        if (string.IsNullOrWhiteSpace(_options.AccountSid) || string.IsNullOrWhiteSpace(_options.AuthToken) || string.IsNullOrWhiteSpace(_options.WhatsAppFromNumber)) return new(false, "Faltan credenciales o el número remitente de Twilio.");
-        if (string.IsNullOrWhiteSpace(_options.ContentSid)) return new(false, "Twilio requiere un ContentSid de una plantilla de WhatsApp aprobada.");
+        if (!_options.Enabled) return new(false, "El envío de Twilio está deshabilitado en la configuración.", ResultadoDefinitivo: true);
+        if (!E164.IsMatch(telefono)) return new(false, "El teléfono no tiene formato E.164 válido.", ResultadoDefinitivo: true);
+        if (string.IsNullOrWhiteSpace(mensaje)) return new(false, "El mensaje no puede estar vacío.", ResultadoDefinitivo: true);
+        if (string.IsNullOrWhiteSpace(_options.AccountSid) || string.IsNullOrWhiteSpace(_options.AuthToken) || string.IsNullOrWhiteSpace(_options.WhatsAppFromNumber)) return new(false, "Faltan credenciales o el número remitente de Twilio.", ResultadoDefinitivo: true);
+        if (string.IsNullOrWhiteSpace(_options.ContentSid)) return new(false, "Twilio requiere un ContentSid de una plantilla de WhatsApp aprobada.", ResultadoDefinitivo: true);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, $"2010-04-01/Accounts/{Uri.EscapeDataString(_options.AccountSid)}/Messages.json");
         var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.AccountSid}:{_options.AuthToken}"));
@@ -40,15 +40,28 @@ public class TwilioWhatsAppSender : IWhatsAppSender
         try
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken);
-            if (response.IsSuccessStatusCode) return new(true);
-            var detalle = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                try
+                {
+                    using var json = JsonDocument.Parse(body);
+                    var sid = json.RootElement.GetProperty("sid").GetString();
+                    return string.IsNullOrWhiteSpace(sid)
+                        ? new(false, "Twilio aceptó la solicitud sin identificar el mensaje.")
+                        : new(true, ProviderMessageId: sid);
+                }
+                catch (JsonException) { return new(false, "Twilio aceptó la solicitud, pero la respuesta no pudo leerse."); }
+                catch (KeyNotFoundException) { return new(false, "Twilio aceptó la solicitud sin identificador de mensaje."); }
+            }
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 var retryAfter = response.Headers.RetryAfter?.Delta;
-                return new(false, $"Twilio limitó los envíos (HTTP 429){(retryAfter.HasValue ? $"; reintentar después de {retryAfter.Value.TotalMinutes:0} minutos" : string.Empty)}.");
+                return new(false, $"Twilio limitó los envíos (HTTP 429){(retryAfter.HasValue ? $"; reintentar después de {retryAfter.Value.TotalMinutes:0} minutos" : string.Empty)}.", ResultadoDefinitivo: true);
             }
-            _logger.LogWarning("Twilio rechazó el envío de WhatsApp con estado {StatusCode}: {Detalle}", (int)response.StatusCode, detalle);
-            return new(false, $"Twilio devolvió HTTP {(int)response.StatusCode}.");
+            _logger.LogWarning("Twilio respondió HTTP {StatusCode} al envío de WhatsApp.", (int)response.StatusCode);
+            return new(false, $"Twilio devolvió HTTP {(int)response.StatusCode}.",
+                ResultadoDefinitivo: (int)response.StatusCode >= 400 && (int)response.StatusCode < 500);
         }
         catch (HttpRequestException ex)
         {

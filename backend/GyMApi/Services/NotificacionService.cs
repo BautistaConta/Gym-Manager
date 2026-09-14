@@ -4,75 +4,150 @@ using GymManager.API.Senders;
 
 namespace GymManager.API.Services;
 
-public class NotificacionService
+public sealed class NotificacionService(
+    INotificacionRepository notificaciones,
+    INotificacionDatos datos,
+    IWhatsAppSender sender,
+    CuotaCalculator cuotas,
+    TimeProvider clock)
 {
-    private readonly INotificacionRepository _notificaciones;
-    private readonly AlumnoRepository _alumnos;
-    private readonly IWhatsAppSender _whatsAppSender;
-    private readonly CuotaCalculator _cuotas;
-    public NotificacionService(INotificacionRepository notificaciones, AlumnoRepository alumnos, IWhatsAppSender whatsAppSender, CuotaCalculator cuotas) { _notificaciones = notificaciones; _alumnos = alumnos; _whatsAppSender = whatsAppSender; _cuotas = cuotas; }
-    public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId) => _notificaciones.GetAllAsync(estado, alumnoId);
-    public Task<NotificacionWhatsApp?> GetByIdAsync(string id) => _notificaciones.GetByIdAsync(id);
-    public Task<bool> ExisteDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) => _notificaciones.ExistsSinceAsync(alumnoId, tipo, desde);
-    public Task<bool> ExisteEnviadaDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) => _notificaciones.ExistsEnviadaDesdeAsync(alumnoId, tipo, desde);
+    public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId) =>
+        notificaciones.GetAllAsync(estado, alumnoId);
 
-    public Task<NotificacionWhatsApp> EncolarPagoConfirmadoAsync(Alumno alumno, Pago pago) => EncolarAsync(alumno, TipoNotificacionWhatsApp.PagoConfirmado, $"Hola {alumno.Nombre}, registramos tu pago de ${pago.MontoFinal:0.00}. ¡Gracias!");
-    public Task<NotificacionWhatsApp> EncolarPorVencerAsync(Alumno alumno, DateTime fechaVencimiento) => EncolarAsync(alumno, TipoNotificacionWhatsApp.PorVencer, $"Hola {alumno.Nombre}, tu cuota vence el {fechaVencimiento:dd/MM/yyyy}. ¡No te quedes sin entrenar!");
-    public Task<NotificacionWhatsApp> EncolarVencidoAsync(Alumno alumno, DateTime fechaVencimiento) => EncolarAsync(alumno, TipoNotificacionWhatsApp.Vencido, $"Hola {alumno.Nombre}, tu cuota venció el {fechaVencimiento:dd/MM/yyyy}. Regularizá tu pago para seguir entrenando.");
+    public Task<NotificacionWhatsApp?> GetByIdAsync(string id) => notificaciones.GetByIdAsync(id);
 
-    public async Task<NotificacionWhatsApp> EnviarRecordatorioManualAsync(Alumno alumno, DateTime fechaVencimiento)
+    public async Task<NotificacionWhatsApp?> EncolarSiCorrespondeAsync(Alumno alumno, Pago pago, TipoNotificacionWhatsApp tipo)
     {
-        var tipo = _cuotas.Evaluar(fechaVencimiento).Estado == EstadoCuota.VENCIDA ? TipoNotificacionWhatsApp.Vencido : TipoNotificacionWhatsApp.PorVencer;
-        var mensaje = tipo == TipoNotificacionWhatsApp.Vencido
-            ? $"Hola {alumno.Nombre}, tu cuota venció el {fechaVencimiento:dd/MM/yyyy}. Regularizá tu pago para seguir entrenando."
-            : $"Hola {alumno.Nombre}, te recordamos que tu cuota vence el {fechaVencimiento:dd/MM/yyyy}. ¡No te quedes sin entrenar!";
-        var notificacion = await EncolarAsync(alumno, tipo, mensaje);
-        var resultado = await _whatsAppSender.SendAsync(notificacion.Telefono, notificacion.Mensaje, notificacion.Tipo);
-        if (resultado.Exitoso) await MarcarEnviadaAsync(notificacion);
-        else await MarcarFallidaAsync(notificacion, resultado.ErrorDetalle ?? "No se pudo enviar el recordatorio.");
+        if (!EsElegible(alumno, pago, tipo)) return null;
+        var now = clock.GetUtcNow().UtcDateTime;
+        var notificacion = new NotificacionWhatsApp
+        {
+            GymId = alumno.GymId,
+            AlumnoId = alumno.Id,
+            PagoId = pago.Id,
+            SucursalId = pago.SucursalId,
+            FechaVencimiento = pago.PeriodoHasta,
+            ClaveDeduplicacion = $"{alumno.GymId}:{pago.Id}:{tipo}",
+            Tipo = tipo,
+            Telefono = alumno.Telefono,
+            Mensaje = tipo == TipoNotificacionWhatsApp.PorVencer
+                ? $"Hola {alumno.Nombre}, tu cuota vence el {pago.PeriodoHasta:dd/MM/yyyy}. ¡No te quedes sin entrenar!"
+                : $"Hola {alumno.Nombre}, tu cuota venció el {pago.PeriodoHasta:dd/MM/yyyy}. Regularizá tu pago para seguir entrenando.",
+            Estado = EstadoNotificacionWhatsApp.Pendiente,
+            FechaCreacion = now,
+            FechaActualizacion = now
+        };
+        return await notificaciones.CreateIfAbsentAsync(notificacion);
+    }
+
+    public async Task<NotificacionWhatsApp> EncolarRecordatorioManualAsync(Alumno alumno, Pago pago)
+    {
+        var ultimoPago = await datos.GetUltimoPagoAsync(alumno.Id);
+        if (ultimoPago?.Id != pago.Id)
+            throw new DomainException("Ese pago es histórico; usá el período más reciente del alumno.");
+        var estado = cuotas.Evaluar(pago.PeriodoHasta).Estado;
+        var tipo = estado switch
+        {
+            EstadoCuota.PROXIMO_A_VENCER => TipoNotificacionWhatsApp.PorVencer,
+            EstadoCuota.VENCIDA => TipoNotificacionWhatsApp.Vencido,
+            _ => throw new DomainException("El pago todavía no está en la ventana de recordatorio.")
+        };
+        var notificacion = await EncolarSiCorrespondeAsync(alumno, pago, tipo)
+            ?? throw new DomainException("El alumno no está habilitado para recibir este recordatorio.");
+        if (notificacion.Estado != EstadoNotificacionWhatsApp.Pendiente)
+            throw new DomainException($"Ya existe un recordatorio {tipo} para este pago (estado: {notificacion.Estado}).");
         return notificacion;
     }
 
-    public async Task MarcarEnviadaAsync(NotificacionWhatsApp notificacion)
+    public bool EsElegible(Alumno alumno, Pago pago, TipoNotificacionWhatsApp tipo)
     {
-        notificacion.Estado = EstadoNotificacionWhatsApp.Enviado;
-        notificacion.FechaEnvio = DateTime.UtcNow;
-        notificacion.ErrorDetalle = null;
-        await _notificaciones.UpdateAsync(notificacion);
-        var alumno = await _alumnos.GetByIdAsync(notificacion.AlumnoId);
-        if (alumno is not null) { alumno.UltimaNotificacionEnviada = notificacion.FechaEnvio; await _alumnos.UpdateAsync(alumno); }
+        if (tipo is not (TipoNotificacionWhatsApp.PorVencer or TipoNotificacionWhatsApp.Vencido)) return false;
+        if (!alumno.Activo || !alumno.NotificacionesHabilitadas ||
+            alumno.FechaConsentimientoNotificacionesUtc is null ||
+            string.IsNullOrWhiteSpace(alumno.Telefono) || !PhoneIsValid(alumno.Telefono)) return false;
+        if (alumno.GymId != pago.GymId || alumno.Id != pago.AlumnoId) return false;
+        var estado = cuotas.Evaluar(pago.PeriodoHasta).Estado;
+        return tipo == TipoNotificacionWhatsApp.PorVencer
+            ? estado == EstadoCuota.PROXIMO_A_VENCER
+            : estado == EstadoCuota.VENCIDA;
     }
 
-    public async Task MarcarFallidaAsync(NotificacionWhatsApp notificacion, string errorDetalle)
-    {
-        notificacion.Estado = EstadoNotificacionWhatsApp.Fallido;
-        notificacion.ErrorDetalle = errorDetalle.Length > 1000 ? errorDetalle[..1000] : errorDetalle;
-        await _notificaciones.UpdateAsync(notificacion);
-    }
+    public Task<long> RevisarProcesandoAlIniciarAsync() =>
+        notificaciones.MarkProcessingForReviewAsync(clock.GetUtcNow().UtcDateTime);
 
-    private async Task<NotificacionWhatsApp> EncolarAsync(Alumno alumno, TipoNotificacionWhatsApp tipo, string mensaje)
+    public async Task ProcesarPendientesAsync(int limite, CancellationToken cancellationToken = default)
     {
-        if (!alumno.NotificacionesHabilitadas) throw new DomainException("El alumno no tiene notificaciones habilitadas.");
-        ValidatePhone(alumno.Telefono);
-        var notificacion = new NotificacionWhatsApp { GymId = alumno.GymId, AlumnoId = alumno.Id, Tipo = tipo, Telefono = alumno.Telefono, Mensaje = mensaje, Estado = EstadoNotificacionWhatsApp.Pendiente, FechaCreacion = DateTime.UtcNow };
-        await _notificaciones.CreateAsync(notificacion);
-        return notificacion;
+        for (var i = 0; i < limite; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var notificacion = await notificaciones.ClaimNextAsync(clock.GetUtcNow().UtcDateTime);
+            if (notificacion is null) return;
+            try
+            {
+                var alumno = await datos.GetAlumnoAsync(notificacion.AlumnoId);
+                var ultimoPago = await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
+                if (alumno is null || ultimoPago is null || ultimoPago.Id != notificacion.PagoId ||
+                    ultimoPago.SucursalId != notificacion.SucursalId ||
+                    alumno.Telefono != notificacion.Telefono ||
+                    !EsElegible(alumno, ultimoPago, notificacion.Tipo))
+                {
+                    await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.Descartado,
+                        "El pago o la elegibilidad del alumno cambió antes del envío.");
+                    continue;
+                }
+
+                var resultado = await sender.SendAsync(notificacion.Telefono, notificacion.Mensaje,
+                    notificacion.Tipo, cancellationToken);
+                if (resultado.Exitoso && !string.IsNullOrWhiteSpace(resultado.ProviderMessageId))
+                    await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.Enviado,
+                        providerMessageId: resultado.ProviderMessageId);
+                else if (!resultado.Exitoso && resultado.ResultadoDefinitivo)
+                    await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.Fallido,
+                        resultado.ErrorDetalle ?? "El proveedor rechazó el mensaje.");
+                else
+                    await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.RequiereRevision,
+                        resultado.ErrorDetalle ?? "No se pudo confirmar si el proveedor aceptó el mensaje.");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch
+            {
+                // Un error después del reclamo puede ocurrir tras el envío: nunca reintentar a ciegas.
+                await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.RequiereRevision,
+                    "Error inesperado durante el procesamiento; verificar en el proveedor.");
+            }
+        }
     }
 
     public async Task<NotificacionWhatsApp> ReenviarAsync(string id)
     {
-        var notificacion = await _notificaciones.GetByIdAsync(id) ?? throw new DomainException("Notificación no encontrada.");
-        if (notificacion.Estado != EstadoNotificacionWhatsApp.Fallido) throw new DomainException("Solo se pueden reenviar notificaciones fallidas.");
-        notificacion.Estado = EstadoNotificacionWhatsApp.Pendiente;
-        notificacion.FechaEnvio = null;
-        notificacion.ErrorDetalle = null;
-        await _notificaciones.UpdateAsync(notificacion);
-        return notificacion;
+        var notificacion = await notificaciones.GetByIdAsync(id) ?? throw new DomainException("Notificación no encontrada.");
+        if (notificacion.Estado != EstadoNotificacionWhatsApp.Fallido)
+            throw new DomainException("Solo se pueden reintentar manualmente rechazos definitivos; los casos ambiguos requieren revisión.");
+        var alumno = await datos.GetAlumnoAsync(notificacion.AlumnoId);
+        var ultimoPago = await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
+        if (alumno is null || ultimoPago?.Id != notificacion.PagoId ||
+            alumno.Telefono != notificacion.Telefono || !EsElegible(alumno, ultimoPago, notificacion.Tipo))
+            throw new DomainException("El alumno o el período ya no es elegible para el recordatorio.");
+        if (!await notificaciones.TransitionAsync(id, EstadoNotificacionWhatsApp.Fallido,
+            EstadoNotificacionWhatsApp.Pendiente, clock.GetUtcNow().UtcDateTime))
+            throw new DomainException("El estado de la notificación cambió; actualizá la pantalla.");
+        return (await notificaciones.GetByIdAsync(id))!;
     }
+
+    private async Task TransicionarAsync(NotificacionWhatsApp notificacion, EstadoNotificacionWhatsApp next,
+        string? error = null, string? providerMessageId = null)
+    {
+        if (!await notificaciones.TransitionAsync(notificacion.Id, EstadoNotificacionWhatsApp.Procesando,
+            next, clock.GetUtcNow().UtcDateTime, error is { Length: > 1000 } ? error[..1000] : error, providerMessageId))
+            throw new InvalidOperationException("No se pudo registrar el resultado del envío.");
+    }
+
+    public static bool PhoneIsValid(string telefono) =>
+        System.Text.RegularExpressions.Regex.IsMatch(telefono, @"^\+[1-9]\d{7,14}$");
 
     public static void ValidatePhone(string telefono)
     {
-        if (string.IsNullOrWhiteSpace(telefono) || !System.Text.RegularExpressions.Regex.IsMatch(telefono, @"^\+[1-9]\d{7,14}$"))
+        if (string.IsNullOrWhiteSpace(telefono) || !PhoneIsValid(telefono))
             throw new DomainException("El teléfono debe estar en formato E.164, por ejemplo +5493811234567.");
     }
 }

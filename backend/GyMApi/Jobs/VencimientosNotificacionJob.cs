@@ -34,7 +34,7 @@ public class VencimientosNotificacionJob : BackgroundService
             var notificaciones = scope.ServiceProvider.GetRequiredService<NotificacionService>();
             var cuotas = scope.ServiceProvider.GetRequiredService<CuotaCalculator>();
 
-            var elegibles = (await alumnos.GetAllAsync()).Where(a => a.Activo && a.NotificacionesHabilitadas).ToList();
+            var elegibles = await alumnos.GetAllAsync();
             var ultimos = await pagos.GetUltimosPorAlumnoAsync(elegibles.Select(a => a.Id));
             foreach (var alumno in elegibles)
             {
@@ -43,19 +43,10 @@ public class VencimientosNotificacionJob : BackgroundService
                     stoppingToken.ThrowIfCancellationRequested();
                     if (!ultimos.TryGetValue(alumno.Id, out var ultimoPago)) continue;
                     var cuota = cuotas.Evaluar(ultimoPago.PeriodoHasta);
-                    var vencimiento = cuota.FechaVencimiento!.Value;
-
                     if (cuota.Estado == EstadoCuota.PROXIMO_A_VENCER)
-                    {
-                        if (!await notificaciones.ExisteDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.PorVencer, DateTime.UtcNow.AddHours(-24)))
-                            await notificaciones.EncolarPorVencerAsync(alumno, vencimiento);
-                    }
+                        await notificaciones.EncolarSiCorrespondeAsync(alumno, ultimoPago, TipoNotificacionWhatsApp.PorVencer);
                     else if (cuota.Estado == EstadoCuota.VENCIDA)
-                    {
-                        // Una notificación de vencido por cada período vencido; al registrar un pago cambia el período de referencia.
-                        if (!await notificaciones.ExisteDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.Vencido, ultimoPago.PeriodoHasta))
-                            await notificaciones.EncolarVencidoAsync(alumno, vencimiento);
-                    }
+                        await notificaciones.EncolarSiCorrespondeAsync(alumno, ultimoPago, TipoNotificacionWhatsApp.Vencido);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { throw; }
                 catch (Exception ex) { _logger.LogError(ex, "No se pudieron evaluar los vencimientos del alumno {AlumnoId}", alumno.Id); }

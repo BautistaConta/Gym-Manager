@@ -7,7 +7,9 @@ public class Alumno : IGymOwned
     public string Nombre { get; set; } = null!;
     public string DNI { get; set; } = null!;
     public string Telefono { get; set; } = null!;
-    public bool NotificacionesHabilitadas { get; set; } = true;
+    public bool NotificacionesHabilitadas { get; set; }
+    public DateTime? FechaConsentimientoNotificacionesUtc { get; set; }
+    public string? MedioConsentimientoNotificaciones { get; set; }
     public DateTime? UltimaNotificacionEnviada { get; set; }
     public DateTime FechaAlta { get; set; }
     public bool Activo { get; set; }

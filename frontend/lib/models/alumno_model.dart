@@ -4,6 +4,9 @@ class AlumnoModel {
   final String dni;
   final String telefono;
   final bool activo;
+  final bool notificacionesHabilitadas;
+  final DateTime? fechaConsentimientoNotificacionesUtc;
+  final String? medioConsentimientoNotificaciones;
   final String? sucursalPrincipalId;
   final String? estado;
   final DateTime? fechaVencimiento;
@@ -14,6 +17,9 @@ class AlumnoModel {
     required this.dni,
     required this.telefono,
     required this.activo,
+    this.notificacionesHabilitadas = false,
+    this.fechaConsentimientoNotificacionesUtc,
+    this.medioConsentimientoNotificaciones,
     this.sucursalPrincipalId,
     this.estado,
     this.fechaVencimiento,
@@ -26,6 +32,15 @@ class AlumnoModel {
       dni: json['dni'] ?? '',
       telefono: json['telefono'] ?? '',
       activo: json['activo'] ?? true,
+      notificacionesHabilitadas: json['notificacionesHabilitadas'] == true,
+      fechaConsentimientoNotificacionesUtc:
+          json['fechaConsentimientoNotificacionesUtc'] == null
+          ? null
+          : DateTime.parse(
+              json['fechaConsentimientoNotificacionesUtc'].toString(),
+            ),
+      medioConsentimientoNotificaciones:
+          json['medioConsentimientoNotificaciones']?.toString(),
       sucursalPrincipalId: json['sucursalPrincipalId']?.toString(),
       estado: json['estado']?.toString(),
       fechaVencimiento: json['fechaVencimiento'] == null
