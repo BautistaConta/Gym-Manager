@@ -32,24 +32,25 @@ public class VencimientosNotificacionJob : BackgroundService
             var alumnos = scope.ServiceProvider.GetRequiredService<AlumnoRepository>();
             var pagos = scope.ServiceProvider.GetRequiredService<PagoRepository>();
             var notificaciones = scope.ServiceProvider.GetRequiredService<NotificacionService>();
-            var hoy = DateTime.UtcNow.Date;
-            var limitePorVencer = hoy.AddDays(5);
+            var cuotas = scope.ServiceProvider.GetRequiredService<CuotaCalculator>();
 
-            foreach (var alumno in (await alumnos.GetAllAsync()).Where(a => a.Activo && a.NotificacionesHabilitadas))
+            var elegibles = (await alumnos.GetAllAsync()).Where(a => a.Activo && a.NotificacionesHabilitadas).ToList();
+            var ultimos = await pagos.GetUltimosPorAlumnoAsync(elegibles.Select(a => a.Id));
+            foreach (var alumno in elegibles)
             {
                 try
                 {
                     stoppingToken.ThrowIfCancellationRequested();
-                    var ultimoPago = await pagos.GetUltimoPagoAsync(alumno.Id);
-                    if (ultimoPago is null) continue;
-                    var vencimiento = ultimoPago.PeriodoHasta.Date;
+                    if (!ultimos.TryGetValue(alumno.Id, out var ultimoPago)) continue;
+                    var cuota = cuotas.Evaluar(ultimoPago.PeriodoHasta);
+                    var vencimiento = cuota.FechaVencimiento!.Value;
 
-                    if (vencimiento >= hoy && vencimiento <= limitePorVencer)
+                    if (cuota.Estado == EstadoCuota.PROXIMO_A_VENCER)
                     {
                         if (!await notificaciones.ExisteDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.PorVencer, DateTime.UtcNow.AddHours(-24)))
                             await notificaciones.EncolarPorVencerAsync(alumno, vencimiento);
                     }
-                    else if (vencimiento < hoy)
+                    else if (cuota.Estado == EstadoCuota.VENCIDA)
                     {
                         // Una notificación de vencido por cada período vencido; al registrar un pago cambia el período de referencia.
                         if (!await notificaciones.ExisteDesdeAsync(alumno.Id, TipoNotificacionWhatsApp.Vencido, ultimoPago.PeriodoHasta))

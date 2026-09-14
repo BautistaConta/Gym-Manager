@@ -143,12 +143,16 @@ class _CobrarAbonoScreenState extends State<CobrarAbonoScreen> {
         periodoHastaManual: _vencimientoManual,
       );
       if (!mounted) return;
+      EstadoAlumno? estadoActualizado;
+      try {
+        estadoActualizado = await _alumnosService.getEstado(_alumno!.id);
+      } catch (_) {
+        // El cobro ya se registró: un fallo al refrescar el estado no debe
+        // presentarse como un fallo de pago ni incentivar un segundo cobro.
+      }
+      if (!mounted) return;
       setState(() {
-        _estado = EstadoAlumno(
-          alumnoId: _alumno!.id,
-          estado: 'ACTIVO',
-          fechaVencimiento: pago.periodoHasta,
-        );
+        _estado = estadoActualizado;
         _vencimientoManual = null;
       });
       await showDialog<void>(
@@ -349,7 +353,7 @@ class _CobrarAbonoScreenState extends State<CobrarAbonoScreen> {
                           ),
                           StatusBadge(
                             label: _estado?.estado ?? 'Seleccionado',
-                            color: _estado?.estado == 'VENCIDO'
+                            color: _estado?.estado == 'VENCIDA'
                                 ? AppTheme.danger
                                 : AppTheme.primaryGreen,
                             icon: Icons.check,

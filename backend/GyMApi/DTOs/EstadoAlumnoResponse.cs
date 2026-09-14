@@ -7,7 +7,7 @@ namespace GymManager.API.DTOs
     public string DNI { get; set; } = null!;
 
     public string Estado { get; set; } = null!; 
-    // ACTIVO | VENCIDO | SIN_PAGOS
+    // SIN_PAGOS | VENCIDA | PROXIMO_A_VENCER | AL_DIA
 
     public DateTime? FechaVencimiento { get; set; }
     }

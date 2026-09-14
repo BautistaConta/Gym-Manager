@@ -52,3 +52,11 @@ dotnet test backend/GyMApi.Tests/GyMApi.Tests.csproj
 Set-Location frontend
 flutter analyze
 ```
+
+## Reglas de cuota del piloto
+
+`Cuotas:TimeZoneId` define la zona horaria de negocio (por defecto `America/Argentina/Buenos_Aires`) y `Cuotas:DiasProximoAVencer` la ventana de aviso (por defecto 5). `FechaPago` y demás timestamps técnicos permanecen en UTC. `PeriodoDesde` y `PeriodoHasta` son fechas de calendario de negocio, almacenadas como UTC a las 00:00 para transportarlas sin ambigüedad; **ambos extremos son inclusivos**. El alumno está cubierto hasta finalizar el día `PeriodoHasta` en la zona de negocio.
+
+Sin pagos se devuelve `SIN_PAGOS`; si el último vencimiento es anterior a hoy, `VENCIDA`; entre hoy y hoy + N días inclusive, `PROXIMO_A_VENCER`; después de esa ventana, `AL_DIA`. El estado se calcula en cada consulta y no se persiste.
+
+Al renovar una cuota aún vigente, el nuevo `PeriodoDesde` es el día posterior al último `PeriodoHasta`, evitando superposición. Si la cuota anterior ya venció, el nuevo período comienza hoy. El `PeriodoHasta` automático es el mismo día de calendario tras `MesesDuracion` meses: por ejemplo, un mes iniciado el 14/09 vence el 14/10 inclusive. Con una ventana de 5 días, ese pago está `AL_DIA` hasta el 08/10, `PROXIMO_A_VENCER` del 09/10 al 14/10 y `VENCIDA` desde el 15/10. Una fecha manual no puede ser anterior al nuevo inicio. `SucursalId` del pago sigue identificando la sede que recibe el ingreso, independientemente de `SucursalPrincipalId` del alumno.

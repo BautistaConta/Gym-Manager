@@ -10,5 +10,7 @@ public class ActualizarAlumnoRequest
     public string Telefono { get; set; } = null!;
 
     public bool Activo { get; set; }
+
+    public string? SucursalPrincipalId { get; set; }
 }
 }

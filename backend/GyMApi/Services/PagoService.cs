@@ -12,6 +12,7 @@ namespace GymManager.API.Services
         private readonly SucursalRepository _sucursalRepo;
         private readonly NotificacionService _notificacionService;
         private readonly ILogger<PagoService> _logger;
+        private readonly CuotaCalculator _cuotas;
 
         public PagoService(
             PagoRepository pagoRepo,
@@ -19,7 +20,8 @@ namespace GymManager.API.Services
             CategoriaPagoRepository categoriaRepo,
             SucursalRepository sucursalRepo,
             NotificacionService notificacionService,
-            ILogger<PagoService> logger)
+            ILogger<PagoService> logger,
+            CuotaCalculator cuotas)
         {
             _pagoRepo = pagoRepo;
             _alumnoRepo = alumnoRepo;
@@ -27,6 +29,7 @@ namespace GymManager.API.Services
             _sucursalRepo = sucursalRepo;
             _notificacionService = notificacionService;
             _logger = logger;
+            _cuotas = cuotas;
         }
 
         public async Task<Pago> RegistrarPagoAsync(RegistrarPagoRequest request)
@@ -34,10 +37,10 @@ namespace GymManager.API.Services
             // 🔹 1. Validar alumno
             var alumno = await _alumnoRepo.GetByIdAsync(request.AlumnoId);
             if (alumno == null)
-                throw new Exception("Alumno no encontrado");
+                throw new DomainException("Alumno no encontrado.");
 
             if (!alumno.Activo)
-                throw new Exception("El alumno está inactivo");
+                throw new DomainException("El alumno está inactivo.");
 
             var sucursal = await _sucursalRepo.GetByIdAsync(request.SucursalId);
             if (sucursal is null)
@@ -55,30 +58,7 @@ namespace GymManager.API.Services
             // 🔹 4. Obtener último pago
             var ultimoPago = await _pagoRepo.GetUltimoPagoAsync(request.AlumnoId);
 
-            var hoy = DateTime.UtcNow.Date;
-
-            // 🔹 5. Calcular PeriodoDesde
-            DateTime periodoDesde;
-
-            if (ultimoPago != null)
-                periodoDesde = ultimoPago.PeriodoHasta;
-            else
-                periodoDesde = hoy;
-
-            // 🔹 6. Calcular PeriodoHasta
-            DateTime periodoHasta;
-
-            if (request.PeriodoHastaManual.HasValue)
-            {
-                periodoHasta = request.PeriodoHastaManual.Value.Date;
-
-                if (periodoHasta <= periodoDesde)
-                    throw new DomainException("La fecha manual debe ser posterior al inicio del período.");
-            }
-            else
-            {
-                periodoHasta = periodoDesde.AddMonths(categoria.MesesDuracion);
-            }
+            var periodo = _cuotas.NuevoPeriodo(ultimoPago?.PeriodoHasta, categoria.MesesDuracion, request.PeriodoHastaManual);
 
             // 🔹 7. Crear pago
             var pago = new Pago
@@ -90,9 +70,9 @@ namespace GymManager.API.Services
                 MontoFinal = decimal.Round(categoria.Precio * (1 - request.DescuentoPorcentaje / 100), 2),
                 MetodoPago = request.MetodoPago,
                 DescuentoPorcentaje = request.DescuentoPorcentaje,
-                FechaPago = hoy,
-                PeriodoDesde = periodoDesde,
-                PeriodoHasta = periodoHasta
+                FechaPago = _cuotas.AhoraUtc,
+                PeriodoDesde = periodo.Desde,
+                PeriodoHasta = periodo.Hasta
             };
 
             await _pagoRepo.CreateAsync(pago);

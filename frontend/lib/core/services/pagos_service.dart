@@ -66,7 +66,11 @@ class PagosService {
         'metodoPago': metodoPago,
         'descuentoPorcentaje': descuentoPorcentaje,
         if (periodoHastaManual != null)
-          'periodoHastaManual': periodoHastaManual.toUtc().toIso8601String(),
+          'periodoHastaManual': DateTime.utc(
+            periodoHastaManual.year,
+            periodoHastaManual.month,
+            periodoHastaManual.day,
+          ).toIso8601String(),
       }),
     );
     if (response.statusCode != 200) {

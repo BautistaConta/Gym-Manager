@@ -70,6 +70,16 @@ builder.Services.AddOptions<CorsOptions>()
             Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)),
         "Cors:AllowedOrigins debe contener orígenes HTTPS concretos en entornos no Development.")
     .ValidateOnStart();
+builder.Services.AddOptions<CuotasOptions>()
+    .Bind(builder.Configuration.GetSection(CuotasOptions.SectionName))
+    .Validate(options => options.DiasProximoAVencer >= 0 && options.DiasProximoAVencer <= 365,
+        "Cuotas:DiasProximoAVencer debe estar entre 0 y 365.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.TimeZoneId) &&
+        TimeZoneInfo.TryFindSystemTimeZoneById(options.TimeZoneId, out _),
+        "Cuotas:TimeZoneId debe ser una zona horaria válida.")
+    .ValidateOnStart();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<CuotaCalculator>();
 builder.Services.AddScoped<IGymContext, GymContext>();
 
 // Registraciones

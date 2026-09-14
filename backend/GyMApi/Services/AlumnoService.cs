@@ -9,15 +9,36 @@ public class AlumnoService
     private readonly AlumnoRepository _alumnos;
     private readonly PagoRepository _pagos;
     private readonly SucursalRepository _sucursales;
+    private readonly CuotaCalculator _cuotas;
 
-    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales)
+    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales, CuotaCalculator cuotas)
     {
         _alumnos = alumnos;
         _pagos = pagos;
         _sucursales = sucursales;
+        _cuotas = cuotas;
     }
 
-    public Task<List<Alumno>> GetAllAsync() => _alumnos.GetAllAsync();
+    public async Task<List<AlumnoListadoResponse>> GetAllAsync()
+    {
+        var alumnos = await _alumnos.GetAllAsync();
+        var ultimos = await _pagos.GetUltimosPorAlumnoAsync(alumnos.Select(a => a.Id));
+        return alumnos.Select(alumno =>
+        {
+            var cuota = _cuotas.Evaluar(ultimos.GetValueOrDefault(alumno.Id)?.PeriodoHasta);
+            return new AlumnoListadoResponse
+            {
+                Id = alumno.Id,
+                Nombre = alumno.Nombre,
+                DNI = alumno.DNI,
+                Telefono = alumno.Telefono,
+                Activo = alumno.Activo,
+                SucursalPrincipalId = alumno.SucursalPrincipalId,
+                Estado = cuota.Estado.ToString(),
+                FechaVencimiento = cuota.FechaVencimiento
+            };
+        }).ToList();
+    }
     public Task<Alumno?> GetByIdAsync(string id) => _alumnos.GetByIdAsync(id);
     public Task<Alumno?> GetByDniAsync(string dni) => _alumnos.GetByDniAsync(dni.Trim());
     public Task<List<Alumno>> SearchAsync(string nombre) => _alumnos.SearchByNombreAsync(nombre.Trim());
@@ -30,11 +51,7 @@ public class AlumnoService
         if (await _alumnos.GetByDniAsync(dni) is not null)
             throw new DomainException("Ya existe un alumno con ese DNI.");
 
-        var sucursalPrincipalId = string.IsNullOrWhiteSpace(request.SucursalPrincipalId)
-            ? null
-            : request.SucursalPrincipalId.Trim();
-        if (sucursalPrincipalId is not null && await _sucursales.GetByIdAsync(sucursalPrincipalId) is null)
-            throw new DomainException("La sucursal principal no existe en el gimnasio actual.");
+        var sucursalPrincipalId = await ValidateSucursalPrincipalAsync(request.SucursalPrincipalId);
 
         var alumno = new Alumno
         {
@@ -57,6 +74,7 @@ public class AlumnoService
         alumno.Nombre = request.Nombre.Trim();
         alumno.Telefono = request.Telefono.Trim();
         alumno.Activo = request.Activo;
+        alumno.SucursalPrincipalId = await ValidateSucursalPrincipalAsync(request.SucursalPrincipalId);
         await _alumnos.UpdateAsync(alumno);
         return alumno;
     }
@@ -80,15 +98,24 @@ public class AlumnoService
     {
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         var ultimoPago = await _pagos.GetUltimoPagoAsync(id);
-        var vencimiento = ultimoPago?.PeriodoHasta;
+        var cuota = _cuotas.Evaluar(ultimoPago?.PeriodoHasta);
         return new EstadoAlumnoResponse
         {
             AlumnoId = alumno.Id,
             Nombre = alumno.Nombre,
             DNI = alumno.DNI,
-            Estado = vencimiento is null ? "SIN_PAGOS" : vencimiento.Value.Date >= DateTime.UtcNow.Date ? "ACTIVO" : "VENCIDO",
-            FechaVencimiento = vencimiento
+            Estado = cuota.Estado.ToString(),
+            FechaVencimiento = cuota.FechaVencimiento
         };
+    }
+
+    private async Task<string?> ValidateSucursalPrincipalAsync(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return null;
+        var normalized = id.Trim();
+        if (await _sucursales.GetByIdAsync(normalized) is null)
+            throw new DomainException("La sucursal principal no existe en el gimnasio actual.");
+        return normalized;
     }
 
     private static void Validate(string nombre, string dni, string telefono)

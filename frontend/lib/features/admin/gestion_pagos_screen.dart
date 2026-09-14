@@ -306,8 +306,10 @@ class _PagoCard extends StatelessWidget {
             InfoRow(
               icon: Icons.event_available_outlined,
               label: 'Vigencia',
+              // Son fechas de calendario, no instantes: convertirlas a la zona
+              // local mostraría el día anterior en Argentina (UTC-3).
               value:
-                  '${DateFormat('dd/MM/yyyy').format(pago.periodoDesde.toLocal())} al ${DateFormat('dd/MM/yyyy').format(pago.periodoHasta.toLocal())}',
+                  '${DateFormat('dd/MM/yyyy').format(pago.periodoDesde)} al ${DateFormat('dd/MM/yyyy').format(pago.periodoHasta)}',
             ),
             InfoRow(
               icon: Icons.store_outlined,

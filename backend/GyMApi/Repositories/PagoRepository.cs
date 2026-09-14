@@ -33,6 +33,16 @@ public class PagoRepository
     public async Task<Pago?> GetUltimoPagoAsync(string alumnoId) => await _collection
         .Find(With(p => p.AlumnoId == alumnoId)).SortByDescending(p => p.PeriodoHasta).FirstOrDefaultAsync();
 
+    public async Task<Dictionary<string, Pago>> GetUltimosPorAlumnoAsync(IEnumerable<string> alumnoIds)
+    {
+        var ids = alumnoIds.Distinct().ToArray();
+        if (ids.Length == 0) return new Dictionary<string, Pago>();
+        var filter = TenantFilters.And<Pago>(_gymContext.GymId,
+            Builders<Pago>.Filter.In(p => p.AlumnoId, ids));
+        var pagos = await _collection.Find(filter).SortByDescending(p => p.PeriodoHasta).ToListAsync();
+        return pagos.GroupBy(p => p.AlumnoId).ToDictionary(group => group.Key, group => group.First());
+    }
+
     public Task<List<Pago>> GetBySucursalIdAsync(string sucursalId) =>
         _collection.Find(With(p => p.SucursalId == sucursalId)).ToListAsync();
 

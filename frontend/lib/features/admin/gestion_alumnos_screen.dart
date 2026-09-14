@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/alumnos_service.dart';
+import '../../core/services/sucursales_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/alumno_model.dart';
-import '../../models/estado_alumno.dart';
+import '../../models/sucursal_model.dart';
 import '../../widgets/app_ui.dart';
 import '../../widgets/modals/create_alumno_modal.dart';
 
@@ -16,11 +17,14 @@ class GestionAlumnosScreen extends StatefulWidget {
 
 class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
   final AlumnosService _service = AlumnosService();
+  final SucursalesService _sucursalesService = SucursalesService();
   final TextEditingController _searchController = TextEditingController();
   bool loading = true;
   String? error;
   List<AlumnoModel> alumnos = [];
-  Map<String, EstadoAlumno> estados = {};
+  List<SucursalModel> sucursales = [];
+  String? _estadoFiltro;
+  String? _sucursalFiltro;
 
   @override
   void initState() {
@@ -41,22 +45,11 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
     });
     try {
       final data = await _service.fetchAll();
-      final results = await Future.wait(
-        data.map((a) async {
-          try {
-            return MapEntry(a.id, await _service.getEstado(a.id));
-          } catch (_) {
-            return null;
-          }
-        }),
-      );
+      final sedes = await _sucursalesService.fetchAll();
       if (!mounted) return;
       setState(() {
         alumnos = data;
-        estados = {
-          for (final e in results)
-            if (e != null) e.key: e.value,
-        };
+        sucursales = sedes;
       });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
@@ -96,6 +89,10 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
     final nombre = TextEditingController(text: alumno.nombre);
     final telefono = TextEditingController(text: alumno.telefono);
     var activo = alumno.activo;
+    var sucursalPrincipalId =
+        sucursales.any((s) => s.id == alumno.sucursalPrincipalId)
+        ? alumno.sucursalPrincipalId
+        : null;
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -120,6 +117,25 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                     labelText: 'Teléfono',
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: sucursalPrincipalId ?? '',
+                  decoration: const InputDecoration(
+                    labelText: 'Sucursal principal',
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: '',
+                      child: Text('Sin asignar'),
+                    ),
+                    ...sucursales.map(
+                      (s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.nombre)),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => sucursalPrincipalId = value),
                 ),
                 const SizedBox(height: 8),
                 SwitchListTile(
@@ -156,6 +172,7 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
         nombre: newName,
         telefono: newPhone,
         activo: activo,
+        sucursalPrincipalId: sucursalPrincipalId,
       );
       await _load();
     } catch (e) {
@@ -176,7 +193,13 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
     final filtered = alumnos
         .where(
           (a) =>
-              a.nombre.toLowerCase().contains(query) || a.dni.contains(query),
+              (a.nombre.toLowerCase().contains(query) ||
+                  a.dni.contains(query)) &&
+              (_estadoFiltro == null || a.estado == _estadoFiltro) &&
+              (_sucursalFiltro == null ||
+                  (_sucursalFiltro == '__sin_asignar__'
+                      ? a.sucursalPrincipalId == null
+                      : a.sucursalPrincipalId == _sucursalFiltro)),
         )
         .toList();
     return Scaffold(
@@ -194,7 +217,7 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
         onPressed: () async {
           if (await showDialog<bool>(
                 context: context,
-                builder: (_) => const CreateAlumnoModal(),
+                builder: (_) => CreateAlumnoModal(sucursales: sucursales),
               ) ==
               true)
             _load();
@@ -238,6 +261,72 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      SizedBox(
+                        width: 230,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _estadoFiltro ?? '',
+                          decoration: const InputDecoration(
+                            labelText: 'Estado de cuota',
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: '', child: Text('Todos')),
+                            DropdownMenuItem(
+                              value: 'SIN_PAGOS',
+                              child: Text('Sin pagos'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'VENCIDA',
+                              child: Text('Vencida'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'PROXIMO_A_VENCER',
+                              child: Text('Próximo a vencer'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'AL_DIA',
+                              child: Text('Al día'),
+                            ),
+                          ],
+                          onChanged: (value) => setState(
+                            () => _estadoFiltro = value == '' ? null : value,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 230,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _sucursalFiltro ?? '',
+                          decoration: const InputDecoration(
+                            labelText: 'Sucursal principal',
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('Todas'),
+                            ),
+                            const DropdownMenuItem(
+                              value: '__sin_asignar__',
+                              child: Text('Sin asignar'),
+                            ),
+                            ...sucursales.map(
+                              (s) => DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.nombre),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) => setState(
+                            () => _sucursalFiltro = value == '' ? null : value,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
                   if (filtered.isEmpty)
                     EmptyState(
                       icon: Icons.person_search_outlined,
@@ -250,11 +339,12 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                     )
                   else
                     ...filtered.map((a) {
-                      final estado = estados[a.id];
-                      final stateColor = estado?.estado == 'ACTIVO'
+                      final stateColor = a.estado == 'AL_DIA'
                           ? AppTheme.primaryGreen
-                          : estado?.estado == 'VENCIDO'
+                          : a.estado == 'VENCIDA'
                           ? AppTheme.danger
+                          : a.estado == 'PROXIMO_A_VENCER'
+                          ? AppTheme.warning
                           : AppTheme.textSecondary;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -301,7 +391,7 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                                       ),
                                       StatusBadge(
                                         label:
-                                            estado?.estado ??
+                                            a.estado ??
                                             (a.activo ? 'Activo' : 'Inactivo'),
                                         color: stateColor,
                                       ),
@@ -315,13 +405,13 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                                         ? 'Sin teléfono'
                                         : a.telefono,
                                   ),
-                                  if (estado?.fechaVencimiento != null)
+                                  if (a.fechaVencimiento != null)
                                     InfoRow(
                                       icon: Icons.event_outlined,
                                       label: 'Vencimiento',
                                       value: DateFormat(
                                         'dd/MM/yyyy',
-                                      ).format(estado!.fechaVencimiento!),
+                                      ).format(a.fechaVencimiento!),
                                     ),
                                 ],
                               );

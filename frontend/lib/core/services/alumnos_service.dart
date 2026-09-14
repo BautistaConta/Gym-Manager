@@ -32,6 +32,7 @@ class AlumnosService {
     required String nombre,
     required String dni,
     required String telefono,
+    String? sucursalPrincipalId,
   }) async {
     final token = await _authService.getToken();
     final url = Uri.parse('${ApiConstants.baseUrl}/api/alumnos');
@@ -42,7 +43,12 @@ class AlumnosService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'nombre': nombre, 'dni': dni, 'telefono': telefono}),
+      body: jsonEncode({
+        'nombre': nombre,
+        'dni': dni,
+        'telefono': telefono,
+        'sucursalPrincipalId': sucursalPrincipalId,
+      }),
     );
 
     if (response.statusCode != 201 && response.statusCode != 200) {
@@ -102,6 +108,7 @@ class AlumnosService {
     required String nombre,
     required String telefono,
     required bool activo,
+    String? sucursalPrincipalId,
   }) async {
     final token = await _authService.getToken();
     final response = await http.put(
@@ -114,6 +121,7 @@ class AlumnosService {
         'nombre': nombre,
         'telefono': telefono,
         'activo': activo,
+        'sucursalPrincipalId': sucursalPrincipalId,
       }),
     );
     if (response.statusCode != 200)

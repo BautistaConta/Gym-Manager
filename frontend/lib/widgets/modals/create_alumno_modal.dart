@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/services/alumnos_service.dart';
+import '../../models/sucursal_model.dart';
 
 class CreateAlumnoModal extends StatefulWidget {
-  const CreateAlumnoModal({super.key});
+  final List<SucursalModel> sucursales;
+  const CreateAlumnoModal({super.key, required this.sucursales});
 
   @override
   State<CreateAlumnoModal> createState() => _CreateAlumnoModalState();
@@ -17,10 +19,12 @@ class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
   final AlumnosService _service = AlumnosService();
 
   bool loading = false;
+  String? sucursalPrincipalId;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => loading = true);
 
     try {
@@ -28,18 +32,17 @@ class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
         nombre: _nombreCtrl.text.trim(),
         dni: _dniCtrl.text.trim(),
         telefono: _telefonoCtrl.text.trim(),
+        sucursalPrincipalId: sucursalPrincipalId,
       );
 
+      if (!mounted) return;
+      messenger.showSnackBar(const SnackBar(content: Text('Alumno creado')));
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Alumno creado')));
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted)
+        messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      setState(() => loading = false);
+      if (mounted) setState(() => loading = false);
     }
   }
 
@@ -71,6 +74,22 @@ class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
               decoration: const InputDecoration(labelText: 'Teléfono'),
               validator: (v) =>
                   v == null || v.isEmpty ? 'Campo requerido' : null,
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: sucursalPrincipalId ?? '',
+              decoration: const InputDecoration(
+                labelText: 'Sucursal principal',
+              ),
+              items: [
+                const DropdownMenuItem(value: '', child: Text('Sin asignar')),
+                ...widget.sucursales.map(
+                  (s) => DropdownMenuItem(value: s.id, child: Text(s.nombre)),
+                ),
+              ],
+              onChanged: (value) => setState(
+                () => sucursalPrincipalId = value == '' ? null : value,
+              ),
             ),
           ],
         ),

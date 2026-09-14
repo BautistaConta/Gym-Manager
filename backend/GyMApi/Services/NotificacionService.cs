@@ -9,7 +9,8 @@ public class NotificacionService
     private readonly INotificacionRepository _notificaciones;
     private readonly AlumnoRepository _alumnos;
     private readonly IWhatsAppSender _whatsAppSender;
-    public NotificacionService(INotificacionRepository notificaciones, AlumnoRepository alumnos, IWhatsAppSender whatsAppSender) { _notificaciones = notificaciones; _alumnos = alumnos; _whatsAppSender = whatsAppSender; }
+    private readonly CuotaCalculator _cuotas;
+    public NotificacionService(INotificacionRepository notificaciones, AlumnoRepository alumnos, IWhatsAppSender whatsAppSender, CuotaCalculator cuotas) { _notificaciones = notificaciones; _alumnos = alumnos; _whatsAppSender = whatsAppSender; _cuotas = cuotas; }
     public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId) => _notificaciones.GetAllAsync(estado, alumnoId);
     public Task<NotificacionWhatsApp?> GetByIdAsync(string id) => _notificaciones.GetByIdAsync(id);
     public Task<bool> ExisteDesdeAsync(string alumnoId, TipoNotificacionWhatsApp tipo, DateTime desde) => _notificaciones.ExistsSinceAsync(alumnoId, tipo, desde);
@@ -21,7 +22,7 @@ public class NotificacionService
 
     public async Task<NotificacionWhatsApp> EnviarRecordatorioManualAsync(Alumno alumno, DateTime fechaVencimiento)
     {
-        var tipo = fechaVencimiento.Date < DateTime.UtcNow.Date ? TipoNotificacionWhatsApp.Vencido : TipoNotificacionWhatsApp.PorVencer;
+        var tipo = _cuotas.Evaluar(fechaVencimiento).Estado == EstadoCuota.VENCIDA ? TipoNotificacionWhatsApp.Vencido : TipoNotificacionWhatsApp.PorVencer;
         var mensaje = tipo == TipoNotificacionWhatsApp.Vencido
             ? $"Hola {alumno.Nombre}, tu cuota venció el {fechaVencimiento:dd/MM/yyyy}. Regularizá tu pago para seguir entrenando."
             : $"Hola {alumno.Nombre}, te recordamos que tu cuota vence el {fechaVencimiento:dd/MM/yyyy}. ¡No te quedes sin entrenar!";
