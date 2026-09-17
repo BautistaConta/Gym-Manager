@@ -40,6 +40,18 @@ final dashboardItems = [
     route: AppRoutes.pagos,
     allowedRoles: [Rol.admin, Rol.gestor],
   ),
+  DashboardItem(
+    title: 'Campañas de WhatsApp',
+    icon: Icons.campaign_outlined,
+    route: AppRoutes.campaniasWhatsApp,
+    allowedRoles: [Rol.admin, Rol.gestor],
+  ),
+  DashboardItem(
+    title: 'Configuración de WhatsApp',
+    icon: Icons.settings_phone_outlined,
+    route: AppRoutes.configuracionWhatsApp,
+    allowedRoles: [Rol.admin],
+  ),
   // DashboardItem(
   //   title: 'Clases',
   //   icon: Icons.fitness_center,

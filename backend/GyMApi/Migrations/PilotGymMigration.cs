@@ -46,9 +46,20 @@ public sealed class PilotGymMigration
                 "emailNormalizado", new BsonDocument("$toLower", new BsonDocument("$trim", new BsonDocument("input", "$email"))))));
         var normalized = await _context.Usuarios.UpdateManyAsync(emailFilter, emailPipeline, cancellationToken: cancellationToken);
 
+        var consentFilter = new BsonDocumentFilterDefinition<Alumno>(new BsonDocument
+        {
+            { "FechaConsentimientoNotificacionesUtc", new BsonDocument("$exists", true) },
+            { "FechaConsentimientoWhatsApp", new BsonDocument("$exists", false) }
+        });
+        var consentRename = await _context.Alumnos.UpdateManyAsync(consentFilter,
+            new BsonDocumentUpdateDefinition<Alumno>(new BsonDocument("$rename",
+                new BsonDocument("FechaConsentimientoNotificacionesUtc", "FechaConsentimientoWhatsApp"))),
+            cancellationToken: cancellationToken);
+
         foreach (var result in results)
             _logger.LogInformation("Migración PilotGymId: {Collection} actualizó {Count} documentos.", result.Key, result.Value);
         _logger.LogInformation("Migración PilotGymId: normalizó {Count} emails.", normalized.ModifiedCount);
+        _logger.LogInformation("Migración consentimiento WhatsApp: renombró {Count} fechas históricas.", consentRename.ModifiedCount);
     }
 
     private async Task<long> BackfillAsync<T>(IMongoCollection<T> collection, CancellationToken cancellationToken) where T : IGymOwned

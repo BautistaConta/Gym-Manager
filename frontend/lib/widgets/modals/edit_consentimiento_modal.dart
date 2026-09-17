@@ -36,7 +36,7 @@ class _EditConsentimientoModalState extends State<EditConsentimientoModal> {
     super.initState();
     _habilitadas =
         widget.alumno.notificacionesHabilitadas &&
-        widget.alumno.fechaConsentimientoNotificacionesUtc != null;
+        widget.alumno.fechaConsentimientoWhatsApp != null;
     _medio = TextEditingController(
       text: widget.alumno.medioConsentimientoNotificaciones ?? '',
     );
@@ -77,7 +77,9 @@ class _EditConsentimientoModalState extends State<EditConsentimientoModal> {
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Avisos de cuota por WhatsApp'),
+                  title: const Text(
+                    'El alumno autoriza recibir avisos del gimnasio por WhatsApp',
+                  ),
                   subtitle: const Text(
                     'El alumno puede aceptar o retirar su consentimiento.',
                   ),

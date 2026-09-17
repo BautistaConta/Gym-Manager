@@ -20,7 +20,7 @@ class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
   final AlumnosService _service = AlumnosService();
 
   bool loading = false;
-  bool notificacionesHabilitadas = true;
+  bool notificacionesHabilitadas = false;
   bool consentimientoConfirmado = false;
   bool mostrarErrorConsentimiento = false;
   String? sucursalPrincipalId;
@@ -123,9 +123,11 @@ class _CreateAlumnoModalState extends State<CreateAlumnoModal> {
                 const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Avisos por WhatsApp'),
+                  title: const Text(
+                    'El alumno autoriza recibir avisos del gimnasio por WhatsApp',
+                  ),
                   subtitle: const Text(
-                    'Solo si el alumno aceptó recibir avisos de cuota.',
+                    'Debe existir una autorización expresa; nunca se activa automáticamente.',
                   ),
                   value: notificacionesHabilitadas,
                   onChanged: (value) => setState(() {

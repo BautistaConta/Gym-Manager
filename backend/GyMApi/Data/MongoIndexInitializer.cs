@@ -48,6 +48,10 @@ public sealed class MongoIndexInitializer
         await _context.NotificacionesWhatsApp.Indexes.CreateManyAsync(new[]
         {
             new CreateIndexModel<NotificacionWhatsApp>(
+                Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.ClaveDeduplicacion),
+                new CreateIndexOptions<NotificacionWhatsApp> { Name = "ux_notificaciones_gym_dedupe", Unique = true,
+                    PartialFilterExpression = new BsonDocumentFilterDefinition<NotificacionWhatsApp>(new BsonDocument("ClaveDeduplicacion", new BsonDocument("$type", "string"))) }),
+            new CreateIndexModel<NotificacionWhatsApp>(
                 Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.PagoId).Ascending(n => n.Tipo),
                 new CreateIndexOptions<NotificacionWhatsApp>
                 {
@@ -62,6 +66,30 @@ public sealed class MongoIndexInitializer
                 }),
             new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.Estado).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_estado_fecha" }),
             new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.AlumnoId).Ascending(n => n.Tipo).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_alumno_tipo_fecha" })
+        }, cancellationToken);
+
+        await _context.NotificacionesWhatsApp.Indexes.CreateOneAsync(
+            new CreateIndexModel<NotificacionWhatsApp>(
+                Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.CampaniaId).Ascending(n => n.AlumnoId),
+                new CreateIndexOptions<NotificacionWhatsApp> { Name = "ux_notificaciones_gym_campania_alumno", Unique = true,
+                    PartialFilterExpression = new BsonDocumentFilterDefinition<NotificacionWhatsApp>(new BsonDocument("CampaniaId", new BsonDocument("$type", "string"))) }),
+            cancellationToken: cancellationToken);
+
+        await _context.NotificacionesWhatsApp.Indexes.CreateOneAsync(
+            new CreateIndexModel<NotificacionWhatsApp>(
+                Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.AlumnoId).Ascending(n => n.Tipo),
+                new CreateIndexOptions<NotificacionWhatsApp> { Name = "ux_notificaciones_gym_alumno_bienvenida", Unique = true,
+                    PartialFilterExpression = new BsonDocumentFilterDefinition<NotificacionWhatsApp>(new BsonDocument("Tipo", (int)TipoNotificacionWhatsApp.Bienvenida)) }),
+            cancellationToken: cancellationToken);
+
+        await _context.CampaniasWhatsApp.Indexes.CreateManyAsync(new[]
+        {
+            new CreateIndexModel<CampaniaWhatsApp>(
+                Builders<CampaniaWhatsApp>.IndexKeys.Ascending(c => c.GymId).Descending(c => c.FechaCreacion),
+                new CreateIndexOptions { Name = "ix_campanias_gym_fecha" }),
+            new CreateIndexModel<CampaniaWhatsApp>(
+                Builders<CampaniaWhatsApp>.IndexKeys.Ascending(c => c.GymId).Ascending(c => c.Estado),
+                new CreateIndexOptions { Name = "ix_campanias_gym_estado" })
         }, cancellationToken);
     }
 }

@@ -97,6 +97,27 @@ public class AuthorizationEndpointsTests : IClassFixture<SecureApiFactory>
     }
 
     [Fact]
+    public async Task Anonymous_user_cannot_access_campaigns_or_whatsapp_configuration()
+    {
+        using var client = _factory.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/campanias-whatsapp")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/configuracion/whatsapp")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Gestor_can_manage_campaigns_but_cannot_read_gym_whatsapp_configuration()
+    {
+        using var client = CreateAuthenticatedClient("Gestor");
+        var campaign = await client.PostAsJsonAsync("/api/campanias-whatsapp", new
+        {
+            nombreInterno = "Prueba", tipoPlantilla = 0,
+            variables = new { titulo = "Promo", detalle = "Detalle" }, tipoAudiencia = 0
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, campaign.StatusCode); // autorizado; la función está deshabilitada por defecto
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/configuracion/whatsapp")).StatusCode);
+    }
+
+    [Fact]
     public async Task Admin_can_list_users_from_its_gym()
     {
         using var client = CreateAuthenticatedClient("Admin");

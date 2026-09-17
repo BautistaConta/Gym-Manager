@@ -11,10 +11,13 @@ public class NotificacionWhatsApp : IGymOwned
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = null!;
     public string AlumnoId { get; set; } = null!;
-    public string PagoId { get; set; } = null!;
-    public string SucursalId { get; set; } = null!;
-    public DateTime FechaVencimiento { get; set; }
+    public string? PagoId { get; set; }
+    public string? SucursalId { get; set; }
+    public string? CampaniaId { get; set; }
+    public DateTime? FechaVencimiento { get; set; }
     public string ClaveDeduplicacion { get; set; } = null!;
+    public string ContentSid { get; set; } = null!;
+    public Dictionary<string, string> VariablesPlantilla { get; set; } = [];
     public TipoNotificacionWhatsApp Tipo { get; set; }
     public string Telefono { get; set; } = null!;
     public string Mensaje { get; set; } = null!;

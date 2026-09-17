@@ -63,7 +63,7 @@ public sealed class NotificacionService(
     {
         if (tipo is not (TipoNotificacionWhatsApp.PorVencer or TipoNotificacionWhatsApp.Vencido)) return false;
         if (!alumno.Activo || !alumno.NotificacionesHabilitadas ||
-            alumno.FechaConsentimientoNotificacionesUtc is null ||
+            alumno.FechaConsentimientoWhatsApp is null ||
             string.IsNullOrWhiteSpace(alumno.Telefono) || !PhoneIsValid(alumno.Telefono)) return false;
         if (alumno.GymId != pago.GymId || alumno.Id != pago.AlumnoId) return false;
         var estado = cuotas.Evaluar(pago.PeriodoHasta).Estado;
@@ -75,7 +75,7 @@ public sealed class NotificacionService(
     public Task<long> RevisarProcesandoAlIniciarAsync() =>
         notificaciones.MarkProcessingForReviewAsync(clock.GetUtcNow().UtcDateTime);
 
-    public async Task ProcesarPendientesAsync(int limite, CancellationToken cancellationToken = default)
+    public async Task ProcesarPendientesAsync(int limite, int campaignDelayMilliseconds = 0, CancellationToken cancellationToken = default)
     {
         for (var i = 0; i < limite; i++)
         {
@@ -85,19 +85,21 @@ public sealed class NotificacionService(
             try
             {
                 var alumno = await datos.GetAlumnoAsync(notificacion.AlumnoId);
-                var ultimoPago = await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
-                if (alumno is null || ultimoPago is null || ultimoPago.Id != notificacion.PagoId ||
-                    ultimoPago.SucursalId != notificacion.SucursalId ||
-                    alumno.Telefono != notificacion.Telefono ||
-                    !EsElegible(alumno, ultimoPago, notificacion.Tipo))
+                var ultimoPago = notificacion.PagoId is null ? null : await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
+                var elegible = alumno is not null && alumno.Activo && alumno.NotificacionesHabilitadas &&
+                    alumno.FechaConsentimientoWhatsApp is not null && alumno.Telefono == notificacion.Telefono &&
+                    PhoneIsValid(alumno.Telefono);
+                if (notificacion.PagoId is not null)
+                    elegible = elegible && ultimoPago?.Id == notificacion.PagoId &&
+                        ultimoPago.SucursalId == notificacion.SucursalId && EsElegible(alumno!, ultimoPago, notificacion.Tipo);
+                if (!elegible)
                 {
                     await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.Descartado,
                         "El pago o la elegibilidad del alumno cambió antes del envío.");
                     continue;
                 }
 
-                var resultado = await sender.SendAsync(notificacion.Telefono, notificacion.Mensaje,
-                    notificacion.Tipo, cancellationToken);
+                var resultado = await sender.SendAsync(notificacion, cancellationToken);
                 if (resultado.Exitoso && !string.IsNullOrWhiteSpace(resultado.ProviderMessageId))
                     await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.Enviado,
                         providerMessageId: resultado.ProviderMessageId);
@@ -107,6 +109,8 @@ public sealed class NotificacionService(
                 else
                     await TransicionarAsync(notificacion, EstadoNotificacionWhatsApp.RequiereRevision,
                         resultado.ErrorDetalle ?? "No se pudo confirmar si el proveedor aceptó el mensaje.");
+                if (notificacion.CampaniaId is not null && campaignDelayMilliseconds > 0)
+                    await Task.Delay(campaignDelayMilliseconds, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch
@@ -124,9 +128,15 @@ public sealed class NotificacionService(
         if (notificacion.Estado != EstadoNotificacionWhatsApp.Fallido)
             throw new DomainException("Solo se pueden reintentar manualmente rechazos definitivos; los casos ambiguos requieren revisión.");
         var alumno = await datos.GetAlumnoAsync(notificacion.AlumnoId);
-        var ultimoPago = await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
-        if (alumno is null || ultimoPago?.Id != notificacion.PagoId ||
-            alumno.Telefono != notificacion.Telefono || !EsElegible(alumno, ultimoPago, notificacion.Tipo))
+        var elegible = alumno is not null && alumno.Activo && alumno.NotificacionesHabilitadas &&
+            alumno.FechaConsentimientoWhatsApp is not null && alumno.Telefono == notificacion.Telefono &&
+            PhoneIsValid(alumno.Telefono);
+        if (notificacion.PagoId is not null)
+        {
+            var ultimoPago = await datos.GetUltimoPagoAsync(notificacion.AlumnoId);
+            elegible = elegible && ultimoPago?.Id == notificacion.PagoId && EsElegible(alumno!, ultimoPago, notificacion.Tipo);
+        }
+        if (!elegible)
             throw new DomainException("El alumno o el período ya no es elegible para el recordatorio.");
         if (!await notificaciones.TransitionAsync(id, EstadoNotificacionWhatsApp.Fallido,
             EstadoNotificacionWhatsApp.Pendiente, clock.GetUtcNow().UtcDateTime))

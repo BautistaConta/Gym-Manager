@@ -1,3 +1,5 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace GymManager.API.Models
 {   
 public class Alumno : IGymOwned
@@ -8,11 +10,15 @@ public class Alumno : IGymOwned
     public string DNI { get; set; } = null!;
     public string Telefono { get; set; } = null!;
     public bool NotificacionesHabilitadas { get; set; }
-    public DateTime? FechaConsentimientoNotificacionesUtc { get; set; }
+    [BsonElement("FechaConsentimientoWhatsApp")]
+    public DateTime? FechaConsentimientoWhatsApp { get; set; }
+    public DateTime? FechaRevocacionWhatsApp { get; set; }
     public string? MedioConsentimientoNotificaciones { get; set; }
     public DateTime? UltimaNotificacionEnviada { get; set; }
     public DateTime FechaAlta { get; set; }
     public bool Activo { get; set; }
     public string? SucursalPrincipalId { get; set; }
+    [BsonIgnore] public string? BienvenidaEstado { get; set; }
+    [BsonIgnore] public string? BienvenidaMotivo { get; set; }
 }
 }

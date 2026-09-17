@@ -13,6 +13,9 @@ namespace GymManager.API.Data
         public IMongoCollection<CategoriaPago> CategoriasPago { get; }
         public IMongoCollection<Sucursal> Sucursales { get; }
         public IMongoCollection<NotificacionWhatsApp> NotificacionesWhatsApp { get; }
+        public IMongoCollection<ConfiguracionGym> ConfiguracionesGym { get; }
+        public IMongoCollection<CampaniaWhatsApp> CampaniasWhatsApp { get; }
+        public IMongoCollection<EventoAuditoria> EventosAuditoria { get; }
 
         public MongoDbContext(IOptions<MongoDbOptions> options)
         {
@@ -27,6 +30,9 @@ namespace GymManager.API.Data
             CategoriasPago = database.GetCollection<CategoriaPago>("CategoriasPago");
             Sucursales = database.GetCollection<Sucursal>("Sucursales");
             NotificacionesWhatsApp = database.GetCollection<NotificacionWhatsApp>("NotificacionesWhatsApp");
+            ConfiguracionesGym = database.GetCollection<ConfiguracionGym>("ConfiguracionesGym");
+            CampaniasWhatsApp = database.GetCollection<CampaniaWhatsApp>("CampaniasWhatsApp");
+            EventosAuditoria = database.GetCollection<EventoAuditoria>("EventosAuditoria");
         }
     }
 }

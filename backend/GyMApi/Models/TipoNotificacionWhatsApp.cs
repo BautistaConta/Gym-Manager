@@ -4,5 +4,8 @@ public enum TipoNotificacionWhatsApp
 {
     PorVencer,
     Vencido,
-    PagoConfirmado
+    PagoConfirmado,
+    Bienvenida,
+    Promocion,
+    AvisoGeneral
 }

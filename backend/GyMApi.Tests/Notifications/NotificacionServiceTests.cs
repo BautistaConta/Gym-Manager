@@ -49,9 +49,9 @@ public class NotificacionServiceTests
         h.Alumno.NotificacionesHabilitadas = false;
         Assert.Null(await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Pago, TipoNotificacionWhatsApp.PorVencer));
         h.Alumno.NotificacionesHabilitadas = true;
-        h.Alumno.FechaConsentimientoNotificacionesUtc = null;
+        h.Alumno.FechaConsentimientoWhatsApp = null;
         Assert.Null(await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Pago, TipoNotificacionWhatsApp.PorVencer));
-        h.Alumno.FechaConsentimientoNotificacionesUtc = Today.AddDays(-10);
+        h.Alumno.FechaConsentimientoWhatsApp = Today.AddDays(-10);
         h.Alumno.Activo = false;
         Assert.Null(await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Pago, TipoNotificacionWhatsApp.PorVencer));
         h.Alumno.Activo = true;
@@ -145,7 +145,7 @@ public class NotificacionServiceTests
         {
             Id = "alumno-1", GymId = "gym-1", Nombre = "Ana", Telefono = "+5493811234567",
             Activo = true, NotificacionesHabilitadas = true,
-            FechaConsentimientoNotificacionesUtc = Today.AddDays(-10)
+            FechaConsentimientoWhatsApp = Today.AddDays(-10)
         };
         var pago = new Pago
         {
@@ -181,7 +181,7 @@ public class NotificacionServiceTests
         private int _calls;
         public int Calls => _calls;
         public WhatsAppSendResult Result { get; set; } = new(true, ProviderMessageId: "SM-test");
-        public Task<WhatsAppSendResult> SendAsync(string telefono, string mensaje, TipoNotificacionWhatsApp tipo,
+        public Task<WhatsAppSendResult> SendAsync(NotificacionWhatsApp notificacion,
             CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _calls);
@@ -198,7 +198,7 @@ public class NotificacionServiceTests
         {
             lock (_gate)
             {
-                var existing = _items.FirstOrDefault(x => x.GymId == n.GymId && x.PagoId == n.PagoId && x.Tipo == n.Tipo);
+                var existing = _items.FirstOrDefault(x => x.GymId == n.GymId && x.ClaveDeduplicacion == n.ClaveDeduplicacion);
                 if (existing is not null) return Task.FromResult(existing);
                 n.Id = Guid.NewGuid().ToString();
                 _items.Add(n);
@@ -213,6 +213,19 @@ public class NotificacionServiceTests
         public Task<NotificacionWhatsApp?> GetByIdAsync(string id)
         {
             lock (_gate) return Task.FromResult(_items.FirstOrDefault(x => x.Id == id));
+        }
+        public Task<List<NotificacionWhatsApp>> GetByCampaniaAsync(string campaniaId)
+        {
+            lock (_gate) return Task.FromResult(_items.Where(x => x.CampaniaId == campaniaId).ToList());
+        }
+        public Task<long> CancelPendingByCampaniaAsync(string campaniaId, DateTime nowUtc)
+        {
+            lock (_gate)
+            {
+                var pending = _items.Where(x => x.CampaniaId == campaniaId && x.Estado == EstadoNotificacionWhatsApp.Pendiente).ToList();
+                foreach (var n in pending) { n.Estado = EstadoNotificacionWhatsApp.Descartado; n.FechaActualizacion = nowUtc; }
+                return Task.FromResult((long)pending.Count);
+            }
         }
         public Task<NotificacionWhatsApp?> ClaimNextAsync(DateTime nowUtc)
         {

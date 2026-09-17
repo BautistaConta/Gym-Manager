@@ -78,6 +78,12 @@ builder.Services.AddOptions<CuotasOptions>()
         TimeZoneInfo.TryFindSystemTimeZoneById(options.TimeZoneId, out _),
         "Cuotas:TimeZoneId debe ser una zona horaria válida.")
     .ValidateOnStart();
+builder.Services.AddOptions<WhatsAppOptions>()
+    .Bind(builder.Configuration.GetSection(WhatsAppOptions.SectionName))
+    .Validate(o => o.MaxRecipientsPerCampaign is >= 1 and <= 5000, "WhatsApp:MaxRecipientsPerCampaign debe estar entre 1 y 5000.")
+    .Validate(o => o.CampaignBatchSize is >= 1 and <= 500, "WhatsApp:CampaignBatchSize debe estar entre 1 y 500.")
+    .Validate(o => o.CampaignDelayMilliseconds is >= 0 and <= 60000, "WhatsApp:CampaignDelayMilliseconds debe estar entre 0 y 60000.")
+    .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<CuotaCalculator>();
 builder.Services.AddScoped<IGymContext, GymContext>();
@@ -91,12 +97,18 @@ builder.Services.AddScoped<AlumnoRepository>();
 builder.Services.AddScoped<PagoRepository>();
 builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
 builder.Services.AddScoped<INotificacionDatos, NotificacionDatos>();
+builder.Services.AddScoped<IConfiguracionGymRepository, ConfiguracionGymRepository>();
+builder.Services.AddScoped<CampaniaWhatsAppRepository>();
+builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PagoService>();
 builder.Services.AddScoped<AlumnoService>();
 builder.Services.AddScoped<CategoriaPagoService>();
 builder.Services.AddScoped<SucursalService>();
 builder.Services.AddScoped<NotificacionService>();
+builder.Services.AddScoped<BienvenidaWhatsAppService>();
+builder.Services.AddScoped<ConfiguracionGymService>();
+builder.Services.AddScoped<CampaniaWhatsAppService>();
 builder.Services.AddScoped<AdminBootstrapper>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<MongoIndexInitializer>();
@@ -109,6 +121,9 @@ builder.Services.AddOptions<TwilioOptions>()
          !string.IsNullOrWhiteSpace(options.WhatsAppFromNumber) &&
          !string.IsNullOrWhiteSpace(options.ContentSid)),
         "La configuración de Twilio está incompleta mientras Twilio:Enabled=true.")
+    .Validate(options => !builder.Configuration.GetValue<bool>("WhatsApp:CampaignsEnabled") ||
+        (!string.IsNullOrWhiteSpace(options.PromotionContentSid) && !string.IsNullOrWhiteSpace(options.GeneralNoticeContentSid)),
+        "Las campañas requieren Twilio:PromotionContentSid y Twilio:GeneralNoticeContentSid.")
     .ValidateOnStart();
 builder.Services.AddHttpClient<IWhatsAppSender, TwilioWhatsAppSender>(client => client.BaseAddress = new Uri("https://api.twilio.com/"));
 builder.Services.AddHostedService<VencimientosNotificacionJob>();

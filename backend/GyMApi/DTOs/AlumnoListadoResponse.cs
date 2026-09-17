@@ -9,7 +9,8 @@ public sealed class AlumnoListadoResponse
     public bool Activo { get; init; }
     public string? SucursalPrincipalId { get; init; }
     public bool NotificacionesHabilitadas { get; init; }
-    public DateTime? FechaConsentimientoNotificacionesUtc { get; init; }
+    public DateTime? FechaConsentimientoWhatsApp { get; init; }
+    public DateTime? FechaRevocacionWhatsApp { get; init; }
     public string? MedioConsentimientoNotificaciones { get; init; }
     public string Estado { get; init; } = null!;
     public DateTime? FechaVencimiento { get; init; }

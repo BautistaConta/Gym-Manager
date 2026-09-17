@@ -35,8 +35,10 @@ public class EnviarNotificacionesJob : BackgroundService
             _logger.LogDebug("Ejecutando envío de notificaciones para el gimnasio piloto {GymId}.", pilotGymId);
             using var scope = _scopeFactory.CreateScope();
             var notificaciones = scope.ServiceProvider.GetRequiredService<NotificacionService>();
-            var limite = Math.Clamp(_configuration.GetValue<int?>("Notificaciones:EnvioBatchSize") ?? 50, 1, 200);
-            await notificaciones.ProcesarPendientesAsync(limite, stoppingToken);
+            var general = Math.Clamp(_configuration.GetValue<int?>("Notificaciones:EnvioBatchSize") ?? 50, 1, 200);
+            var campaign = Math.Clamp(_configuration.GetValue<int?>("WhatsApp:CampaignBatchSize") ?? 20, 1, general);
+            var delay = Math.Clamp(_configuration.GetValue<int?>("WhatsApp:CampaignDelayMilliseconds") ?? 250, 0, 60000);
+            await notificaciones.ProcesarPendientesAsync(Math.Min(general, campaign), delay, stoppingToken);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
         catch (Exception ex) { _logger.LogError(ex, "Falló la ejecución del job de envío de notificaciones."); }

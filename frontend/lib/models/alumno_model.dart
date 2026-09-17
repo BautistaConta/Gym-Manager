@@ -5,7 +5,8 @@ class AlumnoModel {
   final String telefono;
   final bool activo;
   final bool notificacionesHabilitadas;
-  final DateTime? fechaConsentimientoNotificacionesUtc;
+  final DateTime? fechaConsentimientoWhatsApp;
+  final DateTime? fechaRevocacionWhatsApp;
   final String? medioConsentimientoNotificaciones;
   final String? sucursalPrincipalId;
   final String? estado;
@@ -18,7 +19,8 @@ class AlumnoModel {
     required this.telefono,
     required this.activo,
     this.notificacionesHabilitadas = false,
-    this.fechaConsentimientoNotificacionesUtc,
+    this.fechaConsentimientoWhatsApp,
+    this.fechaRevocacionWhatsApp,
     this.medioConsentimientoNotificaciones,
     this.sucursalPrincipalId,
     this.estado,
@@ -33,12 +35,15 @@ class AlumnoModel {
       telefono: json['telefono'] ?? '',
       activo: json['activo'] ?? true,
       notificacionesHabilitadas: json['notificacionesHabilitadas'] == true,
-      fechaConsentimientoNotificacionesUtc:
-          json['fechaConsentimientoNotificacionesUtc'] == null
+      fechaConsentimientoWhatsApp:
+          json['fechaConsentimientoWhatsApp'] == null
           ? null
           : DateTime.parse(
-              json['fechaConsentimientoNotificacionesUtc'].toString(),
+              json['fechaConsentimientoWhatsApp'].toString(),
             ),
+      fechaRevocacionWhatsApp: json['fechaRevocacionWhatsApp'] == null
+          ? null
+          : DateTime.parse(json['fechaRevocacionWhatsApp'].toString()),
       medioConsentimientoNotificaciones:
           json['medioConsentimientoNotificaciones']?.toString(),
       sucursalPrincipalId: json['sucursalPrincipalId']?.toString(),

@@ -10,13 +10,18 @@ public class AlumnoService
     private readonly PagoRepository _pagos;
     private readonly SucursalRepository _sucursales;
     private readonly CuotaCalculator _cuotas;
+    private readonly BienvenidaWhatsAppService _bienvenidas;
+    private readonly ILogger<AlumnoService> _logger;
 
-    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales, CuotaCalculator cuotas)
+    public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales,
+        CuotaCalculator cuotas, BienvenidaWhatsAppService bienvenidas, ILogger<AlumnoService> logger)
     {
         _alumnos = alumnos;
         _pagos = pagos;
         _sucursales = sucursales;
         _cuotas = cuotas;
+        _bienvenidas = bienvenidas;
+        _logger = logger;
     }
 
     public async Task<List<AlumnoListadoResponse>> GetAllAsync()
@@ -35,7 +40,8 @@ public class AlumnoService
                 Activo = alumno.Activo,
                 SucursalPrincipalId = alumno.SucursalPrincipalId,
                 NotificacionesHabilitadas = alumno.NotificacionesHabilitadas,
-                FechaConsentimientoNotificacionesUtc = alumno.FechaConsentimientoNotificacionesUtc,
+                FechaConsentimientoWhatsApp = alumno.FechaConsentimientoWhatsApp,
+                FechaRevocacionWhatsApp = alumno.FechaRevocacionWhatsApp,
                 MedioConsentimientoNotificaciones = alumno.MedioConsentimientoNotificaciones,
                 Estado = cuota.Estado.ToString(),
                 FechaVencimiento = cuota.FechaVencimiento
@@ -66,10 +72,22 @@ public class AlumnoService
             Activo = true,
             SucursalPrincipalId = sucursalPrincipalId,
             NotificacionesHabilitadas = request.NotificacionesHabilitadas,
-            FechaConsentimientoNotificacionesUtc = request.NotificacionesHabilitadas ? _cuotas.AhoraUtc : null,
+            FechaConsentimientoWhatsApp = request.NotificacionesHabilitadas ? _cuotas.AhoraUtc : null,
             MedioConsentimientoNotificaciones = request.NotificacionesHabilitadas ? request.MedioConsentimiento!.Trim() : null
         };
         await _alumnos.CreateAsync(alumno);
+        try
+        {
+            var welcome = await _bienvenidas.EncolarAsync(alumno);
+            alumno.BienvenidaEstado = welcome.Estado;
+            alumno.BienvenidaMotivo = welcome.Motivo;
+        }
+        catch (Exception ex)
+        {
+            alumno.BienvenidaEstado = "Omitida";
+            alumno.BienvenidaMotivo = "El alumno fue creado, pero no se pudo encolar la bienvenida.";
+            _logger.LogError(ex, "No se pudo encolar la bienvenida del alumno {AlumnoId}.", alumno.Id);
+        }
         return alumno;
     }
 
@@ -98,7 +116,8 @@ public class AlumnoService
         ConsentimientoNotificaciones.Validate(habilitadas, medioConsentimiento, consentimientoConfirmado);
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         alumno.NotificacionesHabilitadas = habilitadas;
-        alumno.FechaConsentimientoNotificacionesUtc = habilitadas ? _cuotas.AhoraUtc : null;
+        alumno.FechaConsentimientoWhatsApp = habilitadas ? _cuotas.AhoraUtc : null;
+        alumno.FechaRevocacionWhatsApp = habilitadas ? null : _cuotas.AhoraUtc;
         alumno.MedioConsentimientoNotificaciones = habilitadas ? medioConsentimiento!.Trim() : null;
         await _alumnos.UpdateAsync(alumno);
         return alumno;

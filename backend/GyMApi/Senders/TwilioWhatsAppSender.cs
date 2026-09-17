@@ -18,13 +18,16 @@ public class TwilioWhatsAppSender : IWhatsAppSender
 
     public TwilioWhatsAppSender(HttpClient httpClient, IOptions<TwilioOptions> options, ILogger<TwilioWhatsAppSender> logger) { _httpClient = httpClient; _options = options.Value; _logger = logger; }
 
-    public async Task<WhatsAppSendResult> SendAsync(string telefono, string mensaje, TipoNotificacionWhatsApp tipo, CancellationToken cancellationToken = default)
+    public async Task<WhatsAppSendResult> SendAsync(NotificacionWhatsApp notificacion, CancellationToken cancellationToken = default)
     {
+        var telefono = notificacion.Telefono;
+        var mensaje = notificacion.Mensaje;
         if (!_options.Enabled) return new(false, "El envío de Twilio está deshabilitado en la configuración.", ResultadoDefinitivo: true);
         if (!E164.IsMatch(telefono)) return new(false, "El teléfono no tiene formato E.164 válido.", ResultadoDefinitivo: true);
         if (string.IsNullOrWhiteSpace(mensaje)) return new(false, "El mensaje no puede estar vacío.", ResultadoDefinitivo: true);
         if (string.IsNullOrWhiteSpace(_options.AccountSid) || string.IsNullOrWhiteSpace(_options.AuthToken) || string.IsNullOrWhiteSpace(_options.WhatsAppFromNumber)) return new(false, "Faltan credenciales o el número remitente de Twilio.", ResultadoDefinitivo: true);
-        if (string.IsNullOrWhiteSpace(_options.ContentSid)) return new(false, "Twilio requiere un ContentSid de una plantilla de WhatsApp aprobada.", ResultadoDefinitivo: true);
+        var contentSid = string.IsNullOrWhiteSpace(notificacion.ContentSid) ? _options.ContentSid : notificacion.ContentSid;
+        if (string.IsNullOrWhiteSpace(contentSid)) return new(false, "Twilio requiere un ContentSid de una plantilla de WhatsApp aprobada.", ResultadoDefinitivo: true);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, $"2010-04-01/Accounts/{Uri.EscapeDataString(_options.AccountSid)}/Messages.json");
         var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.AccountSid}:{_options.AuthToken}"));
@@ -33,8 +36,10 @@ public class TwilioWhatsAppSender : IWhatsAppSender
         {
             ["To"] = $"whatsapp:{telefono}",
             ["From"] = ToWhatsAppAddress(_options.WhatsAppFromNumber),
-            ["ContentSid"] = _options.ContentSid,
-            ["ContentVariables"] = JsonSerializer.Serialize(new Dictionary<string, string> { ["1"] = mensaje })
+            ["ContentSid"] = contentSid,
+            ["ContentVariables"] = JsonSerializer.Serialize(notificacion.VariablesPlantilla.Count == 0
+                ? new Dictionary<string, string> { ["1"] = mensaje }
+                : notificacion.VariablesPlantilla)
         });
 
         try

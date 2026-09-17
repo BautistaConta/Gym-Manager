@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/services/alumnos_service.dart';
 import '../../core/services/sucursales_service.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/whatsapp_service.dart';
+import '../../core/utils/whatsapp_url.dart';
+import '../../models/rol_enum.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/alumno_model.dart';
 import '../../models/sucursal_model.dart';
@@ -27,6 +32,7 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
   List<SucursalModel> sucursales = [];
   String? _estadoFiltro;
   String? _sucursalFiltro;
+  String? _textoInicialChat;
 
   @override
   void initState() {
@@ -48,6 +54,14 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
     try {
       final data = await _service.fetchAll();
       final sedes = await _sucursalesService.fetchAll();
+      final user = await AuthService().getStoredUser();
+      if (user?.rol == Rol.admin) {
+        try {
+          _textoInicialChat = (await WhatsAppService().getConfiguracion()).textoInicialChat;
+        } catch (_) {
+          _textoInicialChat = null;
+        }
+      }
       if (!mounted) return;
       setState(() {
         alumnos = data;
@@ -131,6 +145,17 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.toString())));
+  }
+
+  Future<void> _abrirWhatsApp(AlumnoModel alumno) async {
+    final uri = buildWhatsAppUri(alumno.telefono, initialText: _textoInicialChat);
+    if (uri == null) {
+      _showError('El teléfono debe tener formato E.164, por ejemplo +5491123456789.');
+      return;
+    }
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _showError('No se pudo abrir WhatsApp.');
+    }
   }
 
   @override
@@ -356,7 +381,7 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                                     label: 'WhatsApp',
                                     value:
                                         a.notificacionesHabilitadas &&
-                                            a.fechaConsentimientoNotificacionesUtc !=
+                                            a.fechaConsentimientoWhatsApp !=
                                                 null
                                         ? 'Consentimiento registrado'
                                         : 'Sin consentimiento registrado',
@@ -374,6 +399,13 @@ class _GestionAlumnosScreenState extends State<GestionAlumnosScreen> {
                               final actions = Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  IconButton(
+                                    tooltip: buildWhatsAppUri(a.telefono) == null
+                                        ? 'Teléfono inválido: usá formato +códigoPaís...'
+                                        : 'Abrir chat de WhatsApp (no envía automáticamente)',
+                                    onPressed: buildWhatsAppUri(a.telefono) == null ? null : () => _abrirWhatsApp(a),
+                                    icon: const Icon(Icons.chat_bubble_outline),
+                                  ),
                                   OutlinedButton.icon(
                                     onPressed: () => _editAlumno(a),
                                     icon: const Icon(Icons.edit_outlined),

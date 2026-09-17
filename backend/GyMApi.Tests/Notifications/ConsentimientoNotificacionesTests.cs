@@ -6,13 +6,13 @@ namespace GyMApi.Tests.Notifications;
 public class ConsentimientoNotificacionesTests
 {
     [Fact]
-    public void New_student_proposes_notifications_but_requires_explicit_confirmation()
+    public void New_student_does_not_enable_notifications_silently()
     {
         var request = new CrearAlumnoRequest();
-        Assert.True(request.NotificacionesHabilitadas);
+        Assert.False(request.NotificacionesHabilitadas);
         Assert.False(request.ConsentimientoConfirmado);
-        Assert.Throws<DomainException>(() => ConsentimientoNotificaciones.Validate(
-            request.NotificacionesHabilitadas, request.MedioConsentimiento, request.ConsentimientoConfirmado));
+        ConsentimientoNotificaciones.Validate(
+            request.NotificacionesHabilitadas, request.MedioConsentimiento, request.ConsentimientoConfirmado);
     }
 
     [Fact]

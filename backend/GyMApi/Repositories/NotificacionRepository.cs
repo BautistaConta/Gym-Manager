@@ -2,6 +2,8 @@ using GymManager.API.Data;
 using GymManager.API.Models;
 using GymManager.API.Tenancy;
 using MongoDB.Driver;
+using GymManager.API.Options;
+using Microsoft.Extensions.Options;
 
 namespace GymManager.API.Repositories;
 
@@ -10,10 +12,13 @@ public class NotificacionRepository : INotificacionRepository
     private readonly IMongoCollection<NotificacionWhatsApp> _collection;
     private readonly IGymContext _gymContext;
 
-    public NotificacionRepository(MongoDbContext context, IGymContext gymContext)
+    private readonly WhatsAppOptions _whatsApp;
+
+    public NotificacionRepository(MongoDbContext context, IGymContext gymContext, IOptions<WhatsAppOptions> whatsApp)
     {
         _collection = context.NotificacionesWhatsApp;
         _gymContext = gymContext;
+        _whatsApp = whatsApp.Value;
     }
 
     public async Task<NotificacionWhatsApp> CreateIfAbsentAsync(NotificacionWhatsApp notificacion)
@@ -22,7 +27,7 @@ public class NotificacionRepository : INotificacionRepository
         try { await _collection.InsertOneAsync(notificacion); return notificacion; }
         catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
         {
-            return await _collection.Find(With(n => n.PagoId == notificacion.PagoId && n.Tipo == notificacion.Tipo))
+            return await _collection.Find(With(n => n.ClaveDeduplicacion == notificacion.ClaveDeduplicacion))
                 .FirstAsync();
         }
     }
@@ -37,11 +42,15 @@ public class NotificacionRepository : INotificacionRepository
 
     public async Task<NotificacionWhatsApp?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
 
+    public Task<List<NotificacionWhatsApp>> GetByCampaniaAsync(string campaniaId) =>
+        _collection.Find(With(n => n.CampaniaId == campaniaId)).ToListAsync();
+
     public async Task<NotificacionWhatsApp?> ClaimNextAsync(DateTime nowUtc)
     {
         var filter = With(n => n.Estado == EstadoNotificacionWhatsApp.Pendiente &&
-            (n.Tipo == TipoNotificacionWhatsApp.PorVencer || n.Tipo == TipoNotificacionWhatsApp.Vencido) &&
-            n.PagoId != null && n.PagoId != "");
+            n.Tipo != TipoNotificacionWhatsApp.PagoConfirmado && n.ClaveDeduplicacion != "");
+        if (!_whatsApp.CampaignsEnabled)
+            filter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.CampaniaId, null);
         var update = Builders<NotificacionWhatsApp>.Update
             .Set(n => n.Estado, EstadoNotificacionWhatsApp.Procesando)
             .Set(n => n.FechaInicioProcesamiento, nowUtc)
@@ -76,6 +85,16 @@ public class NotificacionRepository : INotificacionRepository
             .Set(n => n.FechaRevision, nowUtc)
             .Set(n => n.FechaActualizacion, nowUtc)
             .Set(n => n.ErrorDetalle, "El proceso se interrumpió durante un envío; verificar en Twilio antes de actuar.");
+        return (await _collection.UpdateManyAsync(filter, update)).ModifiedCount;
+    }
+
+    public async Task<long> CancelPendingByCampaniaAsync(string campaniaId, DateTime nowUtc)
+    {
+        var filter = With(n => n.CampaniaId == campaniaId && n.Estado == EstadoNotificacionWhatsApp.Pendiente);
+        var update = Builders<NotificacionWhatsApp>.Update
+            .Set(n => n.Estado, EstadoNotificacionWhatsApp.Descartado)
+            .Set(n => n.FechaActualizacion, nowUtc)
+            .Set(n => n.ErrorDetalle, "Campaña cancelada antes del envío.");
         return (await _collection.UpdateManyAsync(filter, update)).ModifiedCount;
     }
 

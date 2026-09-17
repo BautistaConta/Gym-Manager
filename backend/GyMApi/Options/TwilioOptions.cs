@@ -8,4 +8,7 @@ public class TwilioOptions
     public string AuthToken { get; set; } = string.Empty;
     public string WhatsAppFromNumber { get; set; } = string.Empty;
     public string ContentSid { get; set; } = string.Empty;
+    public string WelcomeContentSid { get; set; } = string.Empty;
+    public string PromotionContentSid { get; set; } = string.Empty;
+    public string GeneralNoticeContentSid { get; set; } = string.Empty;
 }

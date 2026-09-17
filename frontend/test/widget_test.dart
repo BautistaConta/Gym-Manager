@@ -40,7 +40,7 @@ void main() {
     expect(find.text('Profesor'), findsOneWidget);
   });
 
-  testWidgets('el alta propone avisos pero exige confirmar el consentimiento', (
+  testWidgets('el alta no habilita avisos sin consentimiento explícito', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -50,24 +50,31 @@ void main() {
     );
 
     expect(
-      find.widgetWithText(SwitchListTile, 'Avisos por WhatsApp'),
+      find.widgetWithText(
+        SwitchListTile,
+        'El alumno autoriza recibir avisos del gimnasio por WhatsApp',
+      ),
       findsOneWidget,
     );
     expect(
       tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
-      isTrue,
+      isFalse,
     );
     expect(
       find.text('Confirmo que el alumno aceptó explícitamente'),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(
+      find.byType(CheckboxListTile),
+      findsNothing,
+    );
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
+    expect(find.byType(CheckboxListTile), findsOneWidget);
     expect(
       tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
       isFalse,
     );
-    await tester.tap(find.byType(SwitchListTile));
-    await tester.pump();
-    expect(find.byType(CheckboxListTile), findsNothing);
   });
 
   testWidgets(

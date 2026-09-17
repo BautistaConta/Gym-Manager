@@ -9,6 +9,8 @@ import '../features/Admin/gestion_alumnos_screen.dart';
 import '../features/Admin/gestion_categorias_pago_screen.dart';
 import '../features/Admin/cobrar_abono_screen.dart';
 import '../features/Admin/gestion_pagos_screen.dart';
+import '../features/Admin/campanias_whatsapp_screen.dart';
+import '../features/Admin/configuracion_whatsapp_screen.dart';
 import '../models/rol_enum.dart';
 
 class AppRoutes {
@@ -20,6 +22,8 @@ class AppRoutes {
   static const String gestionCategoriasPago = '/admin/gestion-categorias-pago';
   static const String cobrarAbono = '/admin/cobrar-abono';
   static const String pagos = '/admin/pagos';
+  static const String campaniasWhatsApp = '/admin/campanias-whatsapp';
+  static const String configuracionWhatsApp = '/admin/configuracion-whatsapp';
 
   static final Map<String, WidgetBuilder> _routes = {
     login: (_) => const LoginPage(),
@@ -30,6 +34,8 @@ class AppRoutes {
     gestionCategoriasPago: (_) => const GestionCategoriasPagoScreen(),
     cobrarAbono: (_) => const CobrarAbonoScreen(),
     pagos: (_) => const GestionPagosScreen(),
+    campaniasWhatsApp: (_) => const CampaniasWhatsAppScreen(),
+    configuracionWhatsApp: (_) => const ConfiguracionWhatsAppScreen(),
   };
 
   static final Map<String, Set<Rol>> _allowedRoles = {
@@ -40,6 +46,8 @@ class AppRoutes {
     gestionCategoriasPago: {Rol.admin, Rol.gestor},
     cobrarAbono: {Rol.admin, Rol.gestor},
     pagos: {Rol.admin, Rol.gestor},
+    campaniasWhatsApp: {Rol.admin, Rol.gestor},
+    configuracionWhatsApp: {Rol.admin},
   };
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
