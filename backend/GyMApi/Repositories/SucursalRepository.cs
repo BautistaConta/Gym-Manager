@@ -27,6 +27,8 @@ public class SucursalRepository
         _collection.Find(TenantFilters.ForGym<Sucursal>(_gymContext.GymId)).ToListAsync();
 
     public async Task<Sucursal?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
+    public Task<List<Sucursal>> GetByIdsAsync(IEnumerable<string> ids) => _collection.Find(
+        TenantFilters.And<Sucursal>(_gymContext.GymId, Builders<Sucursal>.Filter.In(s => s.Id, ids.Distinct()))).ToListAsync();
 
     public Task UpdateAsync(Sucursal sucursal)
     {

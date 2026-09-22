@@ -27,6 +27,8 @@ public class AlumnoRepository
         _collection.Find(TenantFilters.ForGym<Alumno>(_gymContext.GymId)).ToListAsync();
 
     public async Task<Alumno?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
+    public Task<List<Alumno>> GetByIdsAsync(IEnumerable<string> ids) => _collection.Find(
+        TenantFilters.And<Alumno>(_gymContext.GymId, Builders<Alumno>.Filter.In(a => a.Id, ids.Distinct()))).ToListAsync();
 
     public async Task<Alumno?> GetByDniAsync(string dni) =>
         await _collection.Find(TenantFilters.And<Alumno>(_gymContext.GymId, Builders<Alumno>.Filter.Eq(a => a.DNI, dni))).FirstOrDefaultAsync();

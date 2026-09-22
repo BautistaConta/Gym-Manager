@@ -113,19 +113,36 @@ builder.Services.AddScoped<AdminBootstrapper>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<MongoIndexInitializer>();
 builder.Services.AddSingleton<PilotGymMigration>();
+// Fuente aislada: ninguna credencial/modo real puede provenir de appsettings JSON.
+var twilioSecrets = new ConfigurationBuilder().AddUserSecrets<Program>(optional: true).AddEnvironmentVariables().Build();
 builder.Services.AddOptions<TwilioOptions>()
     .Bind(builder.Configuration.GetSection(TwilioOptions.SectionName))
+    .Configure(options =>
+    {
+        options.AccountSid = twilioSecrets["Twilio:AccountSid"] ?? "";
+        options.AuthToken = twilioSecrets["Twilio:AuthToken"] ?? "";
+        options.Enabled = !builder.Environment.IsEnvironment("Testing") && twilioSecrets.GetValue<bool>("Twilio:Enabled");
+        options.WorkerEnabled = twilioSecrets.GetValue<bool>("Twilio:WorkerEnabled");
+        options.SmokeTestEnabled = twilioSecrets.GetValue<bool>("Twilio:SmokeTestEnabled");
+        options.PaidAccountConfirmed = twilioSecrets.GetValue<bool>("Twilio:PaidAccountConfirmed");
+        options.TemplatesApprovedConfirmed = twilioSecrets.GetValue<bool>("Twilio:TemplatesApprovedConfirmed");
+    })
     .Validate(options => !options.Enabled ||
         (!string.IsNullOrWhiteSpace(options.AccountSid) &&
          !string.IsNullOrWhiteSpace(options.AuthToken) &&
          !string.IsNullOrWhiteSpace(options.WhatsAppFromNumber) &&
-         !string.IsNullOrWhiteSpace(options.ContentSid)),
-        "La configuración de Twilio está incompleta mientras Twilio:Enabled=true.")
+         !string.IsNullOrWhiteSpace(options.PorVencerContentSid)),
+        "Modo real: cargar secretos Twilio:AccountSid/AuthToken, remitente y Twilio:PorVencerContentSid.")
     .Validate(options => !builder.Configuration.GetValue<bool>("WhatsApp:CampaignsEnabled") ||
         (!string.IsNullOrWhiteSpace(options.PromotionContentSid) && !string.IsNullOrWhiteSpace(options.GeneralNoticeContentSid)),
         "Las campañas requieren Twilio:PromotionContentSid y Twilio:GeneralNoticeContentSid.")
     .ValidateOnStart();
-builder.Services.AddHttpClient<IWhatsAppSender, TwilioWhatsAppSender>(client => client.BaseAddress = new Uri("https://api.twilio.com/"));
+builder.Services.AddHttpClient<TwilioWhatsAppSender>(client => { client.BaseAddress = new Uri("https://api.twilio.com/"); client.Timeout = TimeSpan.FromSeconds(20); });
+builder.Logging.AddFilter("System.Net.Http.HttpClient.TwilioWhatsAppSender", LogLevel.None);
+builder.Services.AddScoped<FakeWhatsAppSender>();
+builder.Services.AddScoped<IWhatsAppSender>(provider => provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<TwilioOptions>>().Value.Enabled
+    ? provider.GetRequiredService<TwilioWhatsAppSender>() : provider.GetRequiredService<FakeWhatsAppSender>());
+builder.Services.AddScoped<WhatsAppSmokeTestService>();
 builder.Services.AddHostedService<VencimientosNotificacionJob>();
 builder.Services.AddHostedService<EnviarNotificacionesJob>();
 

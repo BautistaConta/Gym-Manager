@@ -7,7 +7,13 @@ public class TwilioOptions
     public string AccountSid { get; set; } = string.Empty;
     public string AuthToken { get; set; } = string.Empty;
     public string WhatsAppFromNumber { get; set; } = string.Empty;
-    public string ContentSid { get; set; } = string.Empty;
+    public string PorVencerContentSid { get; set; } = string.Empty;
+    public bool WorkerEnabled { get; set; }
+    public bool SmokeTestEnabled { get; set; }
+    public string AuthorizedTestNumber { get; set; } = string.Empty;
+    public bool PaidAccountConfirmed { get; set; }
+    public bool TemplatesApprovedConfirmed { get; set; }
+    public bool AdditionalTypesEnabled { get; set; }
     public string WelcomeContentSid { get; set; } = string.Empty;
     public string PromotionContentSid { get; set; } = string.Empty;
     public string GeneralNoticeContentSid { get; set; } = string.Empty;

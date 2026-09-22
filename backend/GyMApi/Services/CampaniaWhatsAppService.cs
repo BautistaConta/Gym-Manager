@@ -159,7 +159,7 @@ public sealed class CampaniaWhatsAppService(
         if (campaign.Estado is EstadoCampaniaWhatsApp.Borrador or EstadoCampaniaWhatsApp.Encolando) return;
         var items = await notificaciones.GetByCampaniaAsync(campaign.Id);
         campaign.Pendientes = items.Count(n => n.Estado is EstadoNotificacionWhatsApp.Pendiente or EstadoNotificacionWhatsApp.Procesando);
-        campaign.AceptadasPorTwilio = items.Count(n => n.Estado == EstadoNotificacionWhatsApp.Enviado);
+        campaign.AceptadasPorTwilio = items.Count(n => n.Estado == EstadoNotificacionWhatsApp.AceptadoPorTwilio);
         campaign.Fallidas = items.Count(n => n.Estado is EstadoNotificacionWhatsApp.Fallido or EstadoNotificacionWhatsApp.RequiereRevision);
         if (campaign.Estado != EstadoCampaniaWhatsApp.Cancelada && campaign.Pendientes == 0)
         {

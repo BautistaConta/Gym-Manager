@@ -65,7 +65,9 @@ public sealed class MongoIndexInitializer
                     })
                 }),
             new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.Estado).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_estado_fecha" }),
-            new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.AlumnoId).Ascending(n => n.Tipo).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_alumno_tipo_fecha" })
+            new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.AlumnoId).Ascending(n => n.Tipo).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_alumno_tipo_fecha" }),
+            new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Ascending(n => n.Tipo).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_tipo_fecha" }),
+            new CreateIndexModel<NotificacionWhatsApp>(Builders<NotificacionWhatsApp>.IndexKeys.Ascending(n => n.GymId).Descending(n => n.FechaCreacion), new CreateIndexOptions { Name = "ix_notificaciones_gym_fecha" })
         }, cancellationToken);
 
         await _context.NotificacionesWhatsApp.Indexes.CreateOneAsync(

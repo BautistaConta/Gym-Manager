@@ -45,8 +45,6 @@ public class VencimientosNotificacionJob : BackgroundService
                     var cuota = cuotas.Evaluar(ultimoPago.PeriodoHasta);
                     if (cuota.Estado == EstadoCuota.PROXIMO_A_VENCER)
                         await notificaciones.EncolarSiCorrespondeAsync(alumno, ultimoPago, TipoNotificacionWhatsApp.PorVencer);
-                    else if (cuota.Estado == EstadoCuota.VENCIDA)
-                        await notificaciones.EncolarSiCorrespondeAsync(alumno, ultimoPago, TipoNotificacionWhatsApp.Vencido);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { throw; }
                 catch (Exception ex) { _logger.LogError(ex, "No se pudieron evaluar los vencimientos del alumno {AlumnoId}", alumno.Id); }

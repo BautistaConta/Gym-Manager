@@ -163,6 +163,30 @@ public class AuthorizationEndpointsTests : IClassFixture<SecureApiFactory>
         client.DefaultRequestHeaders.Add("X-Test-Role", role);
         return client;
     }
+
+    [Fact]
+    public async Task Smoke_test_is_admin_only_and_default_readiness_is_safe()
+    {
+        using var anonymous = _factory.CreateClient();
+        using var gestor = CreateAuthenticatedClient("Gestor");
+        using var admin = CreateAuthenticatedClient("Admin");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/admin/whatsapp/prueba")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await gestor.PostAsJsonAsync("/api/admin/whatsapp/prueba", new { tipo = 0, confirmacionCargos = true })).StatusCode);
+        var readiness = await admin.GetAsync("/api/admin/whatsapp/prueba");
+        Assert.Equal(HttpStatusCode.OK, readiness.StatusCode);
+        Assert.Contains("intervencionesPendientes", await readiness.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Notification_history_requires_authentication_and_allows_gestor()
+    {
+        using var anonymous = _factory.CreateClient();
+        using var gestor = CreateAuthenticatedClient("Gestor");
+        using var admin = CreateAuthenticatedClient("Admin");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/notificaciones")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await gestor.GetAsync("/api/notificaciones?pagina=0")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.GetAsync("/api/notificaciones?tamanoPagina=101")).StatusCode);
+    }
 }
 
 public sealed class SecureApiFactory : WebApplicationFactory<Program>

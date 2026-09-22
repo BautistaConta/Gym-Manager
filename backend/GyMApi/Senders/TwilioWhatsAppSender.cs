@@ -1,79 +1,91 @@
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using GymManager.API.Models;
 using GymManager.API.Options;
 using Microsoft.Extensions.Options;
 
 namespace GymManager.API.Senders;
 
-public class TwilioWhatsAppSender : IWhatsAppSender
+public sealed class TwilioWhatsAppSender(HttpClient httpClient, IOptions<TwilioOptions> options,
+    ILogger<TwilioWhatsAppSender> logger) : IWhatsAppSender
 {
-    private static readonly Regex E164 = new(@"^\+[1-9]\d{7,14}$", RegexOptions.Compiled);
-    private readonly HttpClient _httpClient;
-    private readonly TwilioOptions _options;
-    private readonly ILogger<TwilioWhatsAppSender> _logger;
+    private readonly TwilioOptions _options = options.Value;
 
-    public TwilioWhatsAppSender(HttpClient httpClient, IOptions<TwilioOptions> options, ILogger<TwilioWhatsAppSender> logger) { _httpClient = httpClient; _options = options.Value; _logger = logger; }
-
-    public async Task<WhatsAppSendResult> SendAsync(NotificacionWhatsApp notificacion, CancellationToken cancellationToken = default)
+    public async Task<WhatsAppSendResult> SendAsync(NotificacionWhatsApp n, CancellationToken cancellationToken = default)
     {
-        var telefono = notificacion.Telefono;
-        var mensaje = notificacion.Mensaje;
-        if (!_options.Enabled) return new(false, "El envío de Twilio está deshabilitado en la configuración.", ResultadoDefinitivo: true);
-        if (!E164.IsMatch(telefono)) return new(false, "El teléfono no tiene formato E.164 válido.", ResultadoDefinitivo: true);
-        if (string.IsNullOrWhiteSpace(mensaje)) return new(false, "El mensaje no puede estar vacío.", ResultadoDefinitivo: true);
-        if (string.IsNullOrWhiteSpace(_options.AccountSid) || string.IsNullOrWhiteSpace(_options.AuthToken) || string.IsNullOrWhiteSpace(_options.WhatsAppFromNumber)) return new(false, "Faltan credenciales o el número remitente de Twilio.", ResultadoDefinitivo: true);
-        var contentSid = string.IsNullOrWhiteSpace(notificacion.ContentSid) ? _options.ContentSid : notificacion.ContentSid;
-        if (string.IsNullOrWhiteSpace(contentSid)) return new(false, "Twilio requiere un ContentSid de una plantilla de WhatsApp aprobada.", ResultadoDefinitivo: true);
+        var category = "Configuration";
+        if (!_options.Enabled) return Failure("El envío real no está habilitado.");
+        if (!_options.PaidAccountConfirmed) return Failure("Falta confirmar manualmente la activación de la cuenta paga.");
+        if (!_options.TemplatesApprovedConfirmed) return Failure("Falta confirmar manualmente la aprobación de las plantillas.");
+        if (string.IsNullOrWhiteSpace(_options.AccountSid) || string.IsNullOrWhiteSpace(_options.AuthToken) ||
+            !NotificacionServicePhone(_options.WhatsAppFromNumber)) return Failure("Faltan secretos o remitente WhatsApp válido.");
+        if (!NotificacionServicePhone(n.Telefono)) return Failure("Teléfono inválido.");
+        if (n.EsPrueba && (!_options.SmokeTestEnabled || n.Telefono != _options.AuthorizedTestNumber))
+            return Failure("Smoke test no habilitado o destinatario no autorizado.");
+        if (!n.EsPrueba && !_options.WorkerEnabled) return Failure("El worker real no está habilitado.");
+        var sid = n.Tipo switch
+        {
+            TipoNotificacionWhatsApp.PorVencer => _options.PorVencerContentSid,
+            _ => _options.AdditionalTypesEnabled && n.Tipo != TipoNotificacionWhatsApp.PagoConfirmado ? n.ContentSid : null
+        };
+        if (string.IsNullOrWhiteSpace(sid) || !Regex.IsMatch(sid, @"^HX[0-9a-fA-F]{32}$"))
+            return Failure("Falta un ContentSid HX válido para el tipo solicitado (los otros tipos están deshabilitados por defecto).");
+        if (!string.IsNullOrWhiteSpace(n.ContentSid) && n.ContentSid != sid)
+            return Failure("La plantilla configurada cambió desde el encolado; revisar el registro antes de enviar.");
+        if (n.VariablesPlantilla.Count == 0 ||
+            (n.Tipo == TipoNotificacionWhatsApp.PorVencer &&
+             (n.VariablesPlantilla.Count != 2 || !n.VariablesPlantilla.ContainsKey("1") || !n.VariablesPlantilla.ContainsKey("2"))))
+            return Failure("Faltan variables estructuradas nombre/fecha. Revisión manual requerida para registros antiguos.");
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"2010-04-01/Accounts/{Uri.EscapeDataString(_options.AccountSid)}/Messages.json");
-        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.AccountSid}:{_options.AuthToken}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"2010-04-01/Accounts/{Uri.EscapeDataString(_options.AccountSid)}/Messages.json");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.AccountSid}:{_options.AuthToken}")));
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["To"] = $"whatsapp:{telefono}",
-            ["From"] = ToWhatsAppAddress(_options.WhatsAppFromNumber),
-            ["ContentSid"] = contentSid,
-            ["ContentVariables"] = JsonSerializer.Serialize(notificacion.VariablesPlantilla.Count == 0
-                ? new Dictionary<string, string> { ["1"] = mensaje }
-                : notificacion.VariablesPlantilla)
+            ["To"] = $"whatsapp:{n.Telefono}", ["From"] = $"whatsapp:{_options.WhatsAppFromNumber}",
+            ["ContentSid"] = sid, ["ContentVariables"] = JsonSerializer.Serialize(n.VariablesPlantilla)
         });
-
         try
         {
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            var status = (int)response.StatusCode;
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            int? code = null;
+            string? messageSid = null;
+            try
+            {
+                using var json = JsonDocument.Parse(body);
+                if (json.RootElement.ValueKind == JsonValueKind.Object && json.RootElement.TryGetProperty("sid", out var value) && value.ValueKind == JsonValueKind.String)
+                    messageSid = value.GetString();
+                if (json.RootElement.ValueKind == JsonValueKind.Object && json.RootElement.TryGetProperty("code", out var errorCode) && errorCode.ValueKind == JsonValueKind.Number && errorCode.TryGetInt32(out var number)) code = number;
+            }
+            catch (JsonException) { /* Nunca registrar el body. */ }
+            category = response.IsSuccessStatusCode ? "Accepted" : status switch
+            { 401 or 403 => "Authentication", 429 => "RateLimit", >= 500 => "ProviderAmbiguous", _ => "ProviderRejected" };
+            logger.LogInformation("WhatsApp HTTP {HttpStatus} Category {Category} ProviderCode {ProviderCode} CorrelationId {CorrelationId}",
+                status, category, code, n.CorrelationId);
             if (response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                try
-                {
-                    using var json = JsonDocument.Parse(body);
-                    var sid = json.RootElement.GetProperty("sid").GetString();
-                    return string.IsNullOrWhiteSpace(sid)
-                        ? new(false, "Twilio aceptó la solicitud sin identificar el mensaje.")
-                        : new(true, ProviderMessageId: sid);
-                }
-                catch (JsonException) { return new(false, "Twilio aceptó la solicitud, pero la respuesta no pudo leerse."); }
-                catch (KeyNotFoundException) { return new(false, "Twilio aceptó la solicitud sin identificador de mensaje."); }
-            }
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
-            {
-                var retryAfter = response.Headers.RetryAfter?.Delta;
-                return new(false, $"Twilio limitó los envíos (HTTP 429){(retryAfter.HasValue ? $"; reintentar después de {retryAfter.Value.TotalMinutes:0} minutos" : string.Empty)}.", ResultadoDefinitivo: true);
-            }
-            _logger.LogWarning("Twilio respondió HTTP {StatusCode} al envío de WhatsApp.", (int)response.StatusCode);
-            return new(false, $"Twilio devolvió HTTP {(int)response.StatusCode}.",
-                ResultadoDefinitivo: (int)response.StatusCode >= 400 && (int)response.StatusCode < 500);
+                return messageSid is not null && Regex.IsMatch(messageSid, @"^(SM|MM)[0-9a-fA-F]{32}$")
+                    ? new(true, ProviderMessageId: messageSid)
+                    : new(false, $"Respuesta aceptada sin SID válido; revisión manual. CorrelationId={n.CorrelationId}");
+            return new(false, $"HTTP={status}; categoría={category}; código={code}; CorrelationId={n.CorrelationId}",
+                ResultadoDefinitivo: status is >= 400 and < 500);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
-            _logger.LogWarning(ex, "No se pudo conectar con Twilio.");
-            return new(false, "No se pudo conectar con Twilio.");
+            category = "TransportAmbiguous";
+            logger.LogWarning("WhatsApp HTTP unavailable Category {Category} CorrelationId {CorrelationId}", category, n.CorrelationId);
+            return new(false, $"Resultado ambiguo; verificar en Twilio. CorrelationId={n.CorrelationId}");
+        }
+
+        WhatsAppSendResult Failure(string message)
+        {
+            logger.LogWarning("WhatsApp HTTP not_attempted Category {Category} CorrelationId {CorrelationId}", category, n.CorrelationId);
+            return new(false, message, ResultadoDefinitivo: true);
         }
     }
-
-    private static string ToWhatsAppAddress(string phone) => phone.StartsWith("whatsapp:", StringComparison.OrdinalIgnoreCase) ? phone : $"whatsapp:{phone}";
+    private static bool NotificacionServicePhone(string phone) => !string.IsNullOrWhiteSpace(phone) && Regex.IsMatch(phone, @"^\+[1-9]\d{7,14}$");
 }

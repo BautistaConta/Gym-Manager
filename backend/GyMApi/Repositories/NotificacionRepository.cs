@@ -4,6 +4,7 @@ using GymManager.API.Tenancy;
 using MongoDB.Driver;
 using GymManager.API.Options;
 using Microsoft.Extensions.Options;
+using GymManager.API.DTOs;
 
 namespace GymManager.API.Repositories;
 
@@ -13,12 +14,14 @@ public class NotificacionRepository : INotificacionRepository
     private readonly IGymContext _gymContext;
 
     private readonly WhatsAppOptions _whatsApp;
+    private readonly TwilioOptions _twilio;
 
-    public NotificacionRepository(MongoDbContext context, IGymContext gymContext, IOptions<WhatsAppOptions> whatsApp)
+    public NotificacionRepository(MongoDbContext context, IGymContext gymContext, IOptions<WhatsAppOptions> whatsApp, IOptions<TwilioOptions> twilio)
     {
         _collection = context.NotificacionesWhatsApp;
         _gymContext = gymContext;
         _whatsApp = whatsApp.Value;
+        _twilio = twilio.Value;
     }
 
     public async Task<NotificacionWhatsApp> CreateIfAbsentAsync(NotificacionWhatsApp notificacion)
@@ -42,6 +45,29 @@ public class NotificacionRepository : INotificacionRepository
 
     public async Task<NotificacionWhatsApp?> GetByIdAsync(string id) => await _collection.Find(ById(id)).FirstOrDefaultAsync();
 
+    public async Task<NotificacionPageData> SearchAsync(NotificacionHistorialQuery query)
+    {
+        var baseFilter = TenantFilters.ForGym<NotificacionWhatsApp>(_gymContext.GymId);
+        if (query.Tipo.HasValue) baseFilter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Tipo, query.Tipo.Value);
+        if (!string.IsNullOrWhiteSpace(query.AlumnoId)) baseFilter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.AlumnoId, query.AlumnoId.Trim());
+        if (query.DesdeUtc.HasValue) baseFilter &= Builders<NotificacionWhatsApp>.Filter.Gte(n => n.FechaCreacion, query.DesdeUtc.Value);
+        if (query.HastaUtc.HasValue) baseFilter &= Builders<NotificacionWhatsApp>.Filter.Lte(n => n.FechaCreacion, query.HastaUtc.Value);
+        var itemFilter = query.Estado.HasValue
+            ? baseFilter & Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, query.Estado.Value)
+            : baseFilter;
+        var skip = (query.Pagina - 1) * query.TamanoPagina;
+        var itemsTask = _collection.Find(itemFilter).SortByDescending(n => n.FechaCreacion)
+            .Skip(skip).Limit(query.TamanoPagina).ToListAsync();
+        var totalTask = _collection.CountDocumentsAsync(itemFilter);
+        var pendingTask = _collection.CountDocumentsAsync(baseFilter & Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, EstadoNotificacionWhatsApp.Pendiente));
+        var acceptedTask = _collection.CountDocumentsAsync(baseFilter & Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, EstadoNotificacionWhatsApp.AceptadoPorTwilio));
+        var failedTask = _collection.CountDocumentsAsync(baseFilter & Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, EstadoNotificacionWhatsApp.Fallido));
+        var reviewTask = _collection.CountDocumentsAsync(baseFilter & Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Estado, EstadoNotificacionWhatsApp.RequiereRevision));
+        await Task.WhenAll(itemsTask, totalTask, pendingTask, acceptedTask, failedTask, reviewTask);
+        return new(await itemsTask, await totalTask,
+            new((int)await pendingTask, (int)await acceptedTask, (int)await failedTask, (int)await reviewTask));
+    }
+
     public Task<List<NotificacionWhatsApp>> GetByCampaniaAsync(string campaniaId) =>
         _collection.Find(With(n => n.CampaniaId == campaniaId)).ToListAsync();
 
@@ -49,6 +75,9 @@ public class NotificacionRepository : INotificacionRepository
     {
         var filter = With(n => n.Estado == EstadoNotificacionWhatsApp.Pendiente &&
             n.Tipo != TipoNotificacionWhatsApp.PagoConfirmado && n.ClaveDeduplicacion != "");
+        filter &= Builders<NotificacionWhatsApp>.Filter.Ne(n => n.EsPrueba, true);
+        if (!_twilio.AdditionalTypesEnabled)
+            filter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.Tipo, TipoNotificacionWhatsApp.PorVencer);
         if (!_whatsApp.CampaignsEnabled)
             filter &= Builders<NotificacionWhatsApp>.Filter.Eq(n => n.CampaniaId, null);
         var update = Builders<NotificacionWhatsApp>.Update
@@ -72,7 +101,8 @@ public class NotificacionRepository : INotificacionRepository
             .Set(n => n.FechaActualizacion, nowUtc)
             .Set(n => n.ErrorDetalle, error)
             .Set(n => n.ProviderMessageId, providerMessageId);
-        if (next == EstadoNotificacionWhatsApp.Enviado) update = update.Set(n => n.FechaEnvio, nowUtc);
+        if (next == EstadoNotificacionWhatsApp.AceptadoPorTwilio) update = update.Set(n => n.FechaEnvio, nowUtc);
+        if (next == EstadoNotificacionWhatsApp.Procesando) update = update.Set(n => n.FechaInicioProcesamiento, nowUtc).Inc(n => n.Intentos, 1);
         if (next == EstadoNotificacionWhatsApp.RequiereRevision) update = update.Set(n => n.FechaRevision, nowUtc);
         return (await _collection.UpdateOneAsync(filter, update)).ModifiedCount == 1;
     }

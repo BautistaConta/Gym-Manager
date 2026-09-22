@@ -30,4 +30,7 @@ public class NotificacionWhatsApp : IGymOwned
     public int Intentos { get; set; }
     public string? ProviderMessageId { get; set; }
     public string? ErrorDetalle { get; set; }
+    public bool EsPrueba { get; set; }
+    public string CorrelationId { get; set; } = Guid.NewGuid().ToString("N");
+    [BsonIgnore] public string EstadoDescripcion => Estado.ToString();
 }

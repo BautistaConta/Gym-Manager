@@ -8,4 +8,4 @@ public interface IWhatsAppSender
 }
 
 public record WhatsAppSendResult(bool Exitoso, string? ErrorDetalle = null,
-    string? ProviderMessageId = null, bool ResultadoDefinitivo = false);
+    string? ProviderMessageId = null, bool ResultadoDefinitivo = false, bool Simulado = false);

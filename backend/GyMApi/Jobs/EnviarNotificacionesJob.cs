@@ -1,4 +1,6 @@
 using GymManager.API.Services;
+using GymManager.API.Options;
+using Microsoft.Extensions.Options;
 
 namespace GymManager.API.Jobs;
 
@@ -7,8 +9,9 @@ public class EnviarNotificacionesJob : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EnviarNotificacionesJob> _logger;
+    private readonly TwilioOptions _twilio;
 
-    public EnviarNotificacionesJob(IServiceScopeFactory scopeFactory, IConfiguration configuration, ILogger<EnviarNotificacionesJob> logger) { _scopeFactory = scopeFactory; _configuration = configuration; _logger = logger; }
+    public EnviarNotificacionesJob(IServiceScopeFactory scopeFactory, IConfiguration configuration, ILogger<EnviarNotificacionesJob> logger, IOptions<TwilioOptions> twilio) { _scopeFactory = scopeFactory; _configuration = configuration; _logger = logger; _twilio = twilio.Value; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -19,6 +22,7 @@ public class EnviarNotificacionesJob : BackgroundService
             var ambiguas = await service.RevisarProcesandoAlIniciarAsync();
             if (ambiguas > 0) _logger.LogWarning("{Cantidad} notificaciones quedaron para revisión manual tras reiniciar.", ambiguas);
         }
+        if (!_twilio.Enabled || !_twilio.WorkerEnabled) return;
         await EjecutarSeguroAsync(stoppingToken);
         var minutos = Math.Max(1, _configuration.GetValue<int?>("Notificaciones:EnvioIntervalMinutes") ?? 5);
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(minutos));

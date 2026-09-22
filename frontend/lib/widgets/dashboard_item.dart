@@ -52,6 +52,12 @@ final dashboardItems = [
     route: AppRoutes.configuracionWhatsApp,
     allowedRoles: [Rol.admin],
   ),
+  DashboardItem(
+    title: 'Notificaciones',
+    icon: Icons.notifications_outlined,
+    route: AppRoutes.notificaciones,
+    allowedRoles: [Rol.admin, Rol.gestor],
+  ),
   // DashboardItem(
   //   title: 'Clases',
   //   icon: Icons.fitness_center,

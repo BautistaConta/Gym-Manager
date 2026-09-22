@@ -33,7 +33,7 @@ class PagosService {
       );
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final estado = body['estado'];
-    return estado == 1 || estado == 'Enviado'
+    return estado == 0 || estado == 1 || estado == 'AceptadoPorTwilio' || estado == 'Pendiente'
         ? null
         : body['errorDetalle']?.toString() ??
               'Twilio no pudo enviar el recordatorio.';

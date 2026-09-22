@@ -3,9 +3,10 @@ namespace GymManager.API.Models;
 public enum EstadoNotificacionWhatsApp
 {
     Pendiente,
-    Enviado,
+    AceptadoPorTwilio,
     Fallido,
     Procesando,
     RequiereRevision,
-    Descartado
+    Descartado,
+    Simulado
 }

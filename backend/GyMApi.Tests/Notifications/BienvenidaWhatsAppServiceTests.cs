@@ -1,4 +1,5 @@
 using GymManager.API.Models;
+using GymManager.API.DTOs;
 using GymManager.API.Options;
 using GymManager.API.Repositories;
 using GymManager.API.Services;
@@ -70,6 +71,7 @@ public class BienvenidaWhatsAppServiceTests
         }
         public Task<List<NotificacionWhatsApp>> GetAllAsync(EstadoNotificacionWhatsApp? estado, string? alumnoId) => Task.FromResult(Items.ToList());
         public Task<NotificacionWhatsApp?> GetByIdAsync(string id) => Task.FromResult(Items.FirstOrDefault(x => x.Id == id));
+        public Task<NotificacionPageData> SearchAsync(NotificacionHistorialQuery query) => Task.FromResult(new NotificacionPageData([], 0, new(0, 0, 0, 0)));
         public Task<List<NotificacionWhatsApp>> GetByCampaniaAsync(string campaniaId) => Task.FromResult(new List<NotificacionWhatsApp>());
         public Task<NotificacionWhatsApp?> ClaimNextAsync(DateTime nowUtc) => Task.FromResult<NotificacionWhatsApp?>(null);
         public Task<bool> TransitionAsync(string id, EstadoNotificacionWhatsApp expected, EstadoNotificacionWhatsApp next, DateTime nowUtc, string? error = null, string? providerMessageId = null) => Task.FromResult(false);

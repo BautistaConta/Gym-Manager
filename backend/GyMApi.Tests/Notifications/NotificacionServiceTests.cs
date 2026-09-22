@@ -1,4 +1,5 @@
 using GymManager.API.Models;
+using GymManager.API.DTOs;
 using GymManager.API.Options;
 using GymManager.API.Repositories;
 using GymManager.API.Senders;
@@ -31,15 +32,12 @@ public class NotificacionServiceTests
     }
 
     [Fact]
-    public async Task Vencido_only_after_expiration_and_once()
+    public async Task Vencido_is_never_enqueued_to_save_messaging_costs()
     {
         var h = Harness();
-        h.Pago.PeriodoHasta = Today;
-        Assert.Null(await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Datos.UltimoPago, TipoNotificacionWhatsApp.Vencido));
         h.Pago.PeriodoHasta = Today.AddDays(-1);
-        await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Datos.UltimoPago, TipoNotificacionWhatsApp.Vencido);
-        await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Datos.UltimoPago, TipoNotificacionWhatsApp.Vencido);
-        Assert.Single(h.Repo.Items);
+        Assert.Null(await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Datos.UltimoPago, TipoNotificacionWhatsApp.Vencido));
+        Assert.Empty(h.Repo.Items);
     }
 
     [Fact]
@@ -74,7 +72,7 @@ public class NotificacionServiceTests
         Assert.Single(h.Repo.Items);
         Assert.Equal(1, h.Sender.Calls);
         Assert.Equal(1, h.Repo.Items[0].Intentos);
-        Assert.Equal(EstadoNotificacionWhatsApp.Enviado, h.Repo.Items[0].Estado);
+        Assert.Equal(EstadoNotificacionWhatsApp.AceptadoPorTwilio, h.Repo.Items[0].Estado);
         Assert.Equal("SM-test", h.Repo.Items[0].ProviderMessageId);
     }
 
@@ -88,15 +86,17 @@ public class NotificacionServiceTests
         await h.Service.ProcesarPendientesAsync(1);
         Assert.Equal(1, h.Sender.Calls);
         Assert.Equal(EstadoNotificacionWhatsApp.RequiereRevision, h.Repo.Items[0].Estado);
-        await Assert.ThrowsAsync<DomainException>(() => h.Service.ReenviarAsync(h.Repo.Items[0].Id));
+        await h.Service.ReenviarAsync(h.Repo.Items[0].Id);
+        Assert.Equal(EstadoNotificacionWhatsApp.Pendiente, h.Repo.Items[0].Estado);
 
         var second = new Pago { Id = "pago-2", GymId = h.Pago.GymId,
-            AlumnoId = h.Alumno.Id, SucursalId = h.Pago.SucursalId, PeriodoHasta = Today.AddDays(-1) };
+            AlumnoId = h.Alumno.Id, SucursalId = h.Pago.SucursalId, PeriodoHasta = Today.AddDays(3) };
         h.Datos.UltimoPago = second;
-        await h.Service.EncolarSiCorrespondeAsync(h.Alumno, second, TipoNotificacionWhatsApp.Vencido);
+        await h.Service.EncolarSiCorrespondeAsync(h.Alumno, second, TipoNotificacionWhatsApp.PorVencer);
         await h.Repo.ClaimNextAsync(Today);
         Assert.Equal(1, await h.Service.RevisarProcesandoAlIniciarAsync());
-        Assert.Equal(EstadoNotificacionWhatsApp.RequiereRevision, h.Repo.Items[1].Estado);
+        Assert.Equal(EstadoNotificacionWhatsApp.RequiereRevision, h.Repo.Items[0].Estado);
+        Assert.Equal(EstadoNotificacionWhatsApp.Pendiente, h.Repo.Items[1].Estado);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class NotificacionServiceTests
         await h.Service.ProcesarPendientesAsync(1);
         Assert.Single(h.Repo.Items);
         Assert.Equal(2, h.Repo.Items[0].Intentos);
-        Assert.Equal(EstadoNotificacionWhatsApp.Enviado, h.Repo.Items[0].Estado);
+        Assert.Equal(EstadoNotificacionWhatsApp.AceptadoPorTwilio, h.Repo.Items[0].Estado);
     }
 
     [Fact]
@@ -139,6 +139,34 @@ public class NotificacionServiceTests
         Assert.Equal(0, h.Sender.Calls);
     }
 
+    [Fact]
+    public async Task History_filters_paginates_enriches_and_summarizes_errors()
+    {
+        var h = Harness();
+        for (var i = 0; i < 25; i++)
+        {
+            h.Pago.Id = $"pago-{i}";
+            var item = await h.Service.EncolarSiCorrespondeAsync(h.Alumno, h.Pago, TipoNotificacionWhatsApp.PorVencer);
+            item!.FechaCreacion = Today.AddMinutes(i);
+        }
+        h.Repo.Items[0].ErrorDetalle = "AuthToken=supersecret " + new string('x', 400);
+        var page = await h.Service.GetHistorialAsync(new() { Pagina = 2, TamanoPagina = 10,
+            Tipo = TipoNotificacionWhatsApp.PorVencer, DesdeUtc = Today, HastaUtc = Today.AddDays(1) });
+        Assert.Equal(25, page.Total);
+        Assert.Equal(10, page.Items.Count);
+        Assert.Equal(3, page.TotalPaginas);
+        Assert.Equal("Ana", page.Items[0].Alumno);
+        var first = await h.Service.GetHistorialAsync(new() { Pagina = 3, TamanoPagina = 10 });
+        var itemWithError = Assert.Single(first.Items, i => i.ErrorResumen is not null);
+        Assert.True(itemWithError.ErrorResumen!.Length <= 241);
+        Assert.DoesNotContain("supersecret", itemWithError.ErrorResumen);
+        var byStudent = await h.Service.GetHistorialAsync(new() { AlumnoId = "otro-alumno" });
+        Assert.Empty(byStudent.Items);
+        var failedOnly = await h.Service.GetHistorialAsync(new() { Estado = EstadoNotificacionWhatsApp.Fallido });
+        Assert.Empty(failedOnly.Items);
+        await Assert.ThrowsAsync<DomainException>(() => h.Service.GetHistorialAsync(new() { Pagina = 0 }));
+    }
+
     private static TestHarness Harness()
     {
         var alumno = new Alumno
@@ -157,7 +185,7 @@ public class NotificacionServiceTests
         var sender = new FakeSender();
         var clock = new FixedClock(new DateTimeOffset(2026, 9, 14, 15, 0, 0, TimeSpan.Zero));
         var cuotas = new CuotaCalculator(Options.Create(new CuotasOptions()), clock);
-        return new(new NotificacionService(repo, datos, sender, cuotas, clock), repo, datos, sender, alumno, pago);
+        return new(new NotificacionService(repo, datos, sender, cuotas, clock, Options.Create(new TwilioOptions())), repo, datos, sender, alumno, pago);
     }
 
     private sealed record TestHarness(NotificacionService Service, FakeRepo Repo, FakeDatos Datos,
@@ -174,6 +202,8 @@ public class NotificacionServiceTests
         public Pago UltimoPago { get; set; } = null!;
         public Task<Alumno?> GetAlumnoAsync(string id) => Task.FromResult<Alumno?>(Alumno.Id == id ? Alumno : null);
         public Task<Pago?> GetUltimoPagoAsync(string alumnoId) => Task.FromResult<Pago?>(UltimoPago.AlumnoId == alumnoId ? UltimoPago : null);
+        public Task<List<Alumno>> GetAlumnosAsync(IEnumerable<string> ids) => Task.FromResult(ids.Contains(Alumno.Id) ? new List<Alumno> { Alumno } : []);
+        public Task<List<Sucursal>> GetSucursalesAsync(IEnumerable<string> ids) => Task.FromResult(new List<Sucursal>());
     }
 
     private sealed class FakeSender : IWhatsAppSender
@@ -189,7 +219,7 @@ public class NotificacionServiceTests
         }
     }
 
-    private sealed class FakeRepo : INotificacionRepository
+    internal sealed class FakeRepo : INotificacionRepository
     {
         private readonly object _gate = new();
         private readonly List<NotificacionWhatsApp> _items = [];
@@ -213,6 +243,23 @@ public class NotificacionServiceTests
         public Task<NotificacionWhatsApp?> GetByIdAsync(string id)
         {
             lock (_gate) return Task.FromResult(_items.FirstOrDefault(x => x.Id == id));
+        }
+        public Task<NotificacionPageData> SearchAsync(NotificacionHistorialQuery query)
+        {
+            lock (_gate)
+            {
+                var filtered = _items.Where(n => (!query.Estado.HasValue || n.Estado == query.Estado) &&
+                    (!query.Tipo.HasValue || n.Tipo == query.Tipo) &&
+                    (query.AlumnoId is null || n.AlumnoId == query.AlumnoId) &&
+                    (!query.DesdeUtc.HasValue || n.FechaCreacion >= query.DesdeUtc) &&
+                    (!query.HastaUtc.HasValue || n.FechaCreacion <= query.HastaUtc)).OrderByDescending(n => n.FechaCreacion).ToList();
+                var page = filtered.Skip((query.Pagina - 1) * query.TamanoPagina).Take(query.TamanoPagina).ToList();
+                var c = new NotificacionContadores(_items.Count(n => n.Estado == EstadoNotificacionWhatsApp.Pendiente),
+                    _items.Count(n => n.Estado == EstadoNotificacionWhatsApp.AceptadoPorTwilio),
+                    _items.Count(n => n.Estado == EstadoNotificacionWhatsApp.Fallido),
+                    _items.Count(n => n.Estado == EstadoNotificacionWhatsApp.RequiereRevision));
+                return Task.FromResult(new NotificacionPageData(page, filtered.Count, c));
+            }
         }
         public Task<List<NotificacionWhatsApp>> GetByCampaniaAsync(string campaniaId)
         {
@@ -252,7 +299,7 @@ public class NotificacionServiceTests
                 n.ErrorDetalle = error;
                 n.ProviderMessageId = providerMessageId;
                 n.FechaActualizacion = nowUtc;
-                if (next == EstadoNotificacionWhatsApp.Enviado) n.FechaEnvio = nowUtc;
+                if (next == EstadoNotificacionWhatsApp.AceptadoPorTwilio) n.FechaEnvio = nowUtc;
                 if (next == EstadoNotificacionWhatsApp.RequiereRevision) n.FechaRevision = nowUtc;
                 return Task.FromResult(true);
             }
