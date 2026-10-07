@@ -31,33 +31,23 @@ namespace GymManager.API.Controllers
         [HttpPost]
         public async Task<IActionResult> RegistrarPago([FromBody] RegistrarPagoRequest request)
         {
-            try
-            {
-                var pago = await _service.RegistrarPagoAsync(request);
+            var pago = await _service.RegistrarPagoAsync(request);
 
-                var response = new RegistrarPagoResponse
-                {
-                    Id = pago.Id,
-                    AlumnoId = pago.AlumnoId,
-                    SucursalId = pago.SucursalId,
-                    CategoriaPagoId = pago.CategoriaPagoId,
-                    PeriodoDesde = pago.PeriodoDesde,
-                    PeriodoHasta = pago.PeriodoHasta,
-                    DescuentoPorcentaje = pago.DescuentoPorcentaje,
-                    PrecioCategoria = pago.PrecioCategoria,
-                    MontoFinal = pago.MontoFinal,
-                    MetodoPago = pago.MetodoPago.ToString()
-                };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
+            var response = new RegistrarPagoResponse
             {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+                Id = pago.Id,
+                AlumnoId = pago.AlumnoId,
+                SucursalId = pago.SucursalId,
+                CategoriaPagoId = pago.CategoriaPagoId,
+                PeriodoDesde = pago.PeriodoDesde,
+                PeriodoHasta = pago.PeriodoHasta,
+                DescuentoPorcentaje = pago.DescuentoPorcentaje,
+                PrecioCategoria = pago.PrecioCategoria,
+                MontoFinal = pago.MontoFinal,
+                MetodoPago = pago.MetodoPago.ToString()
+            };
+
+            return Ok(response);
         }
     }
 }

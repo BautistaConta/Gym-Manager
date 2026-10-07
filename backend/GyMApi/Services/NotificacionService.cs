@@ -13,7 +13,8 @@ public sealed class NotificacionService(
     IWhatsAppSender sender,
     CuotaCalculator cuotas,
     TimeProvider clock,
-    IOptions<TwilioOptions> twilio)
+    IOptions<TwilioOptions> twilio,
+    IPilotEventRecorder events)
 {
     public async Task<NotificacionHistorialResponse> GetHistorialAsync(NotificacionHistorialQuery query)
     {
@@ -29,7 +30,7 @@ public sealed class NotificacionService(
             return new NotificacionHistorialItem(n.Id, n.AlumnoId, alumno?.Nombre ?? "Alumno no disponible",
                 n.Telefono, n.SucursalId, sucursal?.Nombre, n.Tipo, n.FechaVencimiento, n.FechaCreacion,
                 n.FechaEnvio, n.Estado, n.Estado.ToString(), n.Intentos, n.ProviderMessageId,
-                SafeError(n.ErrorDetalle), n.Tipo == TipoNotificacionWhatsApp.PorVencer &&
+                n.CorrelationId, SafeError(n.ErrorDetalle), n.Tipo == TipoNotificacionWhatsApp.PorVencer &&
                     n.Estado is EstadoNotificacionWhatsApp.Fallido or EstadoNotificacionWhatsApp.RequiereRevision);
         }).ToList();
         return new(items, page.Total, query.Pagina, query.TamanoPagina,
@@ -164,6 +165,7 @@ public sealed class NotificacionService(
         if (!await notificaciones.TransitionAsync(id, notificacion.Estado,
             EstadoNotificacionWhatsApp.Pendiente, clock.GetUtcNow().UtcDateTime))
             throw new DomainException("El estado de la notificación cambió; actualizá la pantalla.");
+        await events.RecordAsync(PilotEventTypes.NotificacionReenviada, id);
         return (await notificaciones.GetByIdAsync(id))!;
     }
 
@@ -173,6 +175,10 @@ public sealed class NotificacionService(
         if (!await notificaciones.TransitionAsync(notificacion.Id, EstadoNotificacionWhatsApp.Procesando,
             next, clock.GetUtcNow().UtcDateTime, error is { Length: > 1000 } ? error[..1000] : error, providerMessageId))
             throw new InvalidOperationException("No se pudo registrar el resultado del envío.");
+        if (next == EstadoNotificacionWhatsApp.AceptadoPorTwilio)
+            await events.RecordAsync(PilotEventTypes.NotificacionAceptada, notificacion.Id);
+        else if (next == EstadoNotificacionWhatsApp.Fallido)
+            await events.RecordAsync(PilotEventTypes.NotificacionFallida, notificacion.Id);
     }
 
     public static bool PhoneIsValid(string telefono) =>

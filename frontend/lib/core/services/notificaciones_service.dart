@@ -13,6 +13,7 @@ class NotificacionItem {
   final String estado;
   final String? sucursal;
   final String? providerMessageId;
+  final String correlationId;
   final String? error;
   final DateTime fechaCreacion;
   final DateTime? fechaVencimiento;
@@ -29,6 +30,7 @@ class NotificacionItem {
     required this.fechaCreacion,
     required this.intentos,
     required this.puedeReintentar,
+    required this.correlationId,
     this.sucursal,
     this.providerMessageId,
     this.error,
@@ -45,6 +47,7 @@ class NotificacionItem {
         estado: json['estadoDescripcion'].toString(),
         sucursal: json['sucursal']?.toString(),
         providerMessageId: json['providerMessageId']?.toString(),
+        correlationId: json['correlationId']?.toString() ?? '-',
         error: json['errorResumen']?.toString(),
         fechaCreacion: DateTime.parse(json['fechaCreacion'].toString()),
         fechaVencimiento: json['fechaVencimiento'] == null
@@ -65,6 +68,42 @@ class NotificacionItem {
     5 => 'Aviso general',
     _ => 'Otro',
   };
+}
+
+class PilotEventCount {
+  final DateTime diaUtc;
+  final String tipo;
+  final int cantidad;
+
+  const PilotEventCount(this.diaUtc, this.tipo, this.cantidad);
+
+  factory PilotEventCount.fromJson(Map<String, dynamic> json) =>
+      PilotEventCount(
+        DateTime.parse(json['diaUtc'].toString()),
+        json['tipo'].toString(),
+        json['cantidad'] as int,
+      );
+}
+
+class PilotUsageSummary {
+  final DateTime desdeUtc;
+  final DateTime hastaUtc;
+  final List<PilotEventCount> conteos;
+
+  const PilotUsageSummary(this.desdeUtc, this.hastaUtc, this.conteos);
+
+  int totalFor(Iterable<String> types) => conteos
+      .where((item) => types.contains(item.tipo))
+      .fold(0, (total, item) => total + item.cantidad);
+
+  factory PilotUsageSummary.fromJson(Map<String, dynamic> json) =>
+      PilotUsageSummary(
+        DateTime.parse(json['desdeUtc'].toString()),
+        DateTime.parse(json['hastaUtc'].toString()),
+        (json['conteos'] as List)
+            .map((item) => PilotEventCount.fromJson(item))
+            .toList(),
+      );
 }
 
 class NotificacionPage {
@@ -134,6 +173,16 @@ class NotificacionesService {
       body: jsonEncode({'confirmacionExplicita': true}),
     );
     if (response.statusCode != 200) throw Exception(_error(response));
+  }
+
+  Future<PilotUsageSummary?> getPilotSummary() async {
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}/api/admin/pilot-events/resumen'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 403) return null;
+    if (response.statusCode != 200) throw Exception(_error(response));
+    return PilotUsageSummary.fromJson(jsonDecode(response.body));
   }
 
   String _error(http.Response response) {

@@ -185,7 +185,8 @@ public class NotificacionServiceTests
         var sender = new FakeSender();
         var clock = new FixedClock(new DateTimeOffset(2026, 9, 14, 15, 0, 0, TimeSpan.Zero));
         var cuotas = new CuotaCalculator(Options.Create(new CuotasOptions()), clock);
-        return new(new NotificacionService(repo, datos, sender, cuotas, clock, Options.Create(new TwilioOptions())), repo, datos, sender, alumno, pago);
+        return new(new NotificacionService(repo, datos, sender, cuotas, clock,
+            Options.Create(new TwilioOptions()), new FakeEvents()), repo, datos, sender, alumno, pago);
     }
 
     private sealed record TestHarness(NotificacionService Service, FakeRepo Repo, FakeDatos Datos,
@@ -217,6 +218,13 @@ public class NotificacionServiceTests
             Interlocked.Increment(ref _calls);
             return Task.FromResult(Result);
         }
+    }
+
+    private sealed class FakeEvents : IPilotEventRecorder
+    {
+        public Task RecordAsync(string tipo, string? entidadId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task RecordForGymAsync(string gymId, string tipo, string? entidadId = null,
+            string? usuarioId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     internal sealed class FakeRepo : INotificacionRepository

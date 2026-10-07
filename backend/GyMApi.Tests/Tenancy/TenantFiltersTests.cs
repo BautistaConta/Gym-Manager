@@ -15,6 +15,7 @@ public class TenantFiltersTests
         AssertGymFilter<CategoriaPago>();
         AssertGymFilter<Pago>();
         AssertGymFilter<NotificacionWhatsApp>();
+        AssertGymFilter<PilotEvent>();
     }
 
     [Fact]

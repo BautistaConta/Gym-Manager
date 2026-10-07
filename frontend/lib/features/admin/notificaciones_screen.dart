@@ -17,6 +17,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
   final NotificacionesService _service = NotificacionesService();
   final AlumnosService _alumnosService = AlumnosService();
   NotificacionPage? _data;
+  PilotUsageSummary? _usage;
   List<AlumnoModel> _alumnos = [];
   bool _loading = true;
   String? _error;
@@ -69,7 +70,18 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                 999,
               ),
       );
-      if (mounted) setState(() => _data = value);
+      PilotUsageSummary? usage;
+      try {
+        usage = await _service.getPilotSummary();
+      } catch (_) {
+        // El historial sigue disponible si el resumen administrativo falla.
+      }
+      if (mounted) {
+        setState(() {
+          _data = value;
+          _usage = usage;
+        });
+      }
     } catch (exception) {
       if (mounted) setState(() => _error = exception.toString());
     } finally {
@@ -181,6 +193,10 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
                   ),
                   const SizedBox(height: 16),
                   _counters(),
+                  if (_usage != null) ...[
+                    const SizedBox(height: 16),
+                    _usageSummary(),
+                  ],
                   const SizedBox(height: 16),
                   _filters(),
                   const SizedBox(height: 18),
@@ -336,6 +352,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
               ),
             if (item.providerMessageId != null)
               SelectableText('Message SID: ${item.providerMessageId}'),
+            SelectableText('Correlation ID: ${item.correlationId}'),
             if (item.error != null)
               Text(
                 item.error!,
@@ -383,4 +400,50 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
 
   Widget _counter(String label, dynamic value) =>
       Chip(label: Text('$label: ${value ?? 0}'));
+
+  Widget _usageSummary() {
+    final usage = _usage!;
+    return SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Uso del piloto · últimos 7 días',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _counter('Ingresos', usage.totalFor(['LoginExitoso'])),
+              _counter(
+                'Cambios de alumnos',
+                usage.totalFor([
+                  'AlumnoCreado',
+                  'AlumnoActualizado',
+                  'AlumnoDesactivado',
+                ]),
+              ),
+              _counter('Pagos registrados', usage.totalFor(['PagoRegistrado'])),
+              _counter(
+                'Mensajes aceptados',
+                usage.totalFor(['NotificacionAceptada']),
+              ),
+              _counter(
+                'Mensajes fallidos',
+                usage.totalFor(['NotificacionFallida']),
+              ),
+              _counter('Reintentos', usage.totalFor(['NotificacionReenviada'])),
+            ],
+          ),
+          if (usage.conteos.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text('Todavía no hay eventos en este período.'),
+            ),
+        ],
+      ),
+    );
+  }
 }

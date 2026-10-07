@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace GymManager.API.Services;
 
 public sealed class WhatsAppSmokeTestService(INotificacionRepository repository, IWhatsAppSender sender,
-    IOptions<TwilioOptions> options, IGymContext gym, TimeProvider clock)
+    IOptions<TwilioOptions> options, IGymContext gym, TimeProvider clock, IPilotEventRecorder events)
 {
     public List<string> IntervencionesPendientes()
     {
@@ -55,6 +55,10 @@ public sealed class WhatsAppSmokeTestService(INotificacionRepository repository,
             if (!await repository.TransitionAsync(n.Id, EstadoNotificacionWhatsApp.Procesando, state,
                 clock.GetUtcNow().UtcDateTime, result.ErrorDetalle, result.ProviderMessageId))
                 throw new InvalidOperationException("No se pudo guardar el resultado; no repetir el envío.");
+            if (state == EstadoNotificacionWhatsApp.AceptadoPorTwilio)
+                await events.RecordAsync(PilotEventTypes.NotificacionAceptada, n.Id, cancellationToken);
+            else if (state == EstadoNotificacionWhatsApp.Fallido)
+                await events.RecordAsync(PilotEventTypes.NotificacionFallida, n.Id, cancellationToken);
         }
         catch
         {

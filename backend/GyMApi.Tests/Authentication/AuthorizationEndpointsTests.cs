@@ -39,6 +39,16 @@ public class AuthorizationEndpointsTests : IClassFixture<SecureApiFactory>
     }
 
     [Fact]
+    public async Task Liveness_is_public_and_returns_a_safe_payload()
+    {
+        using var client = _factory.CreateClient();
+        var response = await client.GetAsync("/health/live");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Healthy", await response.Content.ReadAsStringAsync());
+        Assert.True(response.Headers.Contains("X-Correlation-ID"));
+    }
+
+    [Fact]
     public async Task Legacy_seed_admin_endpoint_does_not_exist()
     {
         using var client = _factory.CreateClient();
@@ -186,6 +196,21 @@ public class AuthorizationEndpointsTests : IClassFixture<SecureApiFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/notificaciones")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await gestor.GetAsync("/api/notificaciones?pagina=0")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.GetAsync("/api/notificaciones?tamanoPagina=101")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Pilot_event_summary_is_admin_only_and_has_bounded_range()
+    {
+        using var anonymous = _factory.CreateClient();
+        using var gestor = CreateAuthenticatedClient("Gestor");
+        using var admin = CreateAuthenticatedClient("Admin");
+        const string path = "/api/admin/pilot-events/resumen?desdeUtc=2026-01-01&hastaUtc=2026-03-01";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await gestor.GetAsync(path)).StatusCode);
+        var response = await admin.GetAsync(path);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.True(response.Headers.Contains("X-Correlation-ID"));
+        Assert.DoesNotContain("stack", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
     }
 }
 

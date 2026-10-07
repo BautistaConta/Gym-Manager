@@ -10,11 +10,13 @@ namespace GymManager.API.Controllers
     {
         private readonly UserService _userService;
         private readonly JwtService _jwtService;
+        private readonly IPilotEventRecorder _events;
 
-        public AuthController(UserService userService, JwtService jwtService)
+        public AuthController(UserService userService, JwtService jwtService, IPilotEventRecorder events)
         {
             _userService = userService;
             _jwtService = jwtService;
+            _events = events;
         }
 
         [HttpPost("login")]
@@ -24,6 +26,7 @@ namespace GymManager.API.Controllers
             {
                 var user = await _userService.LoginAsync(request);
                 var token = _jwtService.GenerateToken(user);
+                await _events.RecordForGymAsync(user.GymId, PilotEventTypes.LoginExitoso, user.Id, user.Id);
                 return Ok(new
                 {
                     token,

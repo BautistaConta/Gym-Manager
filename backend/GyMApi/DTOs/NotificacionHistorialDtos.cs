@@ -19,7 +19,7 @@ public sealed record NotificacionHistorialItem(
     string? SucursalId, string? Sucursal, TipoNotificacionWhatsApp Tipo,
     DateTime? FechaVencimiento, DateTime FechaCreacion, DateTime? FechaEnvio,
     EstadoNotificacionWhatsApp Estado, string EstadoDescripcion, int Intentos,
-    string? ProviderMessageId, string? ErrorResumen, bool PuedeReintentar);
+    string? ProviderMessageId, string CorrelationId, string? ErrorResumen, bool PuedeReintentar);
 public sealed record NotificacionHistorialResponse(
     IReadOnlyList<NotificacionHistorialItem> Items, long Total, int Pagina,
     int TamanoPagina, int TotalPaginas, NotificacionContadores Contadores);

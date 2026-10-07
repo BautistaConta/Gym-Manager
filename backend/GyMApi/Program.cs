@@ -11,9 +11,22 @@ using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using GymManager.API.Tenancy;
 using GymManager.API.Migrations;
+using GymManager.API.Health;
+using GymManager.API.Middleware;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+    options.UseUtcTimestamp = true;
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -100,6 +113,9 @@ builder.Services.AddScoped<INotificacionDatos, NotificacionDatos>();
 builder.Services.AddScoped<IConfiguracionGymRepository, ConfiguracionGymRepository>();
 builder.Services.AddScoped<CampaniaWhatsAppRepository>();
 builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+builder.Services.AddScoped<IPilotEventRepository, PilotEventRepository>();
+builder.Services.AddScoped<PilotEventService>();
+builder.Services.AddScoped<IPilotEventRecorder>(provider => provider.GetRequiredService<PilotEventService>());
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PagoService>();
 builder.Services.AddScoped<AlumnoService>();
@@ -113,6 +129,7 @@ builder.Services.AddScoped<AdminBootstrapper>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<MongoIndexInitializer>();
 builder.Services.AddSingleton<PilotGymMigration>();
+builder.Services.AddHealthChecks().AddCheck<MongoHealthCheck>("mongodb", tags: ["ready"]);
 // Fuente aislada: ninguna credencial/modo real puede provenir de appsettings JSON.
 var twilioSecrets = new ConfigurationBuilder().AddUserSecrets<Program>(optional: true).AddEnvironmentVariables().Build();
 builder.Services.AddOptions<TwilioOptions>()
@@ -190,6 +207,9 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 if (args.Contains("--migrate-pilot-gym", StringComparer.OrdinalIgnoreCase))
 {
     await app.Services.GetRequiredService<PilotGymMigration>().RunAsync();
@@ -215,7 +235,31 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = WriteHealthResponse
+}).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponse
+}).AllowAnonymous();
 
 app.Run();
+
+static Task WriteHealthResponse(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+    return context.Response.WriteAsync(JsonSerializer.Serialize(new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(entry => new
+        {
+            name = entry.Key,
+            status = entry.Value.Status.ToString()
+        })
+    }));
+}
 
 public partial class Program;

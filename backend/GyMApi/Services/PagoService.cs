@@ -12,6 +12,7 @@ namespace GymManager.API.Services
         private readonly SucursalRepository _sucursalRepo;
         private readonly NotificacionService _notificacionService;
         private readonly CuotaCalculator _cuotas;
+        private readonly IPilotEventRecorder _events;
 
         public PagoService(
             PagoRepository pagoRepo,
@@ -19,7 +20,8 @@ namespace GymManager.API.Services
             CategoriaPagoRepository categoriaRepo,
             SucursalRepository sucursalRepo,
             NotificacionService notificacionService,
-            CuotaCalculator cuotas)
+            CuotaCalculator cuotas,
+            IPilotEventRecorder events)
         {
             _pagoRepo = pagoRepo;
             _alumnoRepo = alumnoRepo;
@@ -27,6 +29,7 @@ namespace GymManager.API.Services
             _sucursalRepo = sucursalRepo;
             _notificacionService = notificacionService;
             _cuotas = cuotas;
+            _events = events;
         }
 
         public async Task<Pago> RegistrarPagoAsync(RegistrarPagoRequest request)
@@ -73,6 +76,7 @@ namespace GymManager.API.Services
             };
 
             await _pagoRepo.CreateAsync(pago);
+            await _events.RecordAsync(PilotEventTypes.PagoRegistrado, pago.Id);
 
             return pago;
         }

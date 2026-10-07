@@ -61,7 +61,7 @@ public class WhatsAppSmokeTestTests
         PorVencerContentSid = "HX11111111111111111111111111111111"
     };
     private static WhatsAppSmokeTestService Service(NotificacionServiceTests.FakeRepo repo, CountingSender sender, TwilioOptions options) =>
-        new(repo, sender, Options.Create(options), new TestGym(), TimeProvider.System);
+        new(repo, sender, Options.Create(options), new TestGym(), TimeProvider.System, new FakeEvents());
     private sealed class TestGym : IGymContext { public string GymId => "gym-a"; }
     private sealed class CountingSender : IWhatsAppSender
     {
@@ -69,5 +69,11 @@ public class WhatsAppSmokeTestTests
         public WhatsAppSendResult Result { get; set; } = new(true, ProviderMessageId: "SM11111111111111111111111111111111");
         public Task<WhatsAppSendResult> SendAsync(NotificacionWhatsApp n, CancellationToken cancellationToken = default)
         { Interlocked.Increment(ref Calls); return Task.FromResult(Result); }
+    }
+    private sealed class FakeEvents : IPilotEventRecorder
+    {
+        public Task RecordAsync(string tipo, string? entidadId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task RecordForGymAsync(string gymId, string tipo, string? entidadId = null,
+            string? usuarioId = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

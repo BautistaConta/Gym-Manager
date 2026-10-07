@@ -8,7 +8,9 @@ public class SucursalService
 {
     private readonly SucursalRepository _sucursales;
     private readonly PagoRepository _pagos;
-    public SucursalService(SucursalRepository sucursales, PagoRepository pagos) { _sucursales = sucursales; _pagos = pagos; }
+    private readonly IPilotEventRecorder _events;
+    public SucursalService(SucursalRepository sucursales, PagoRepository pagos, IPilotEventRecorder events)
+    { _sucursales = sucursales; _pagos = pagos; _events = events; }
     public Task<List<Sucursal>> GetAllAsync() => _sucursales.GetAllAsync();
     public Task<Sucursal?> GetByIdAsync(string id) => _sucursales.GetByIdAsync(id);
 
@@ -17,6 +19,7 @@ public class SucursalService
         Validate(request.Nombre, request.Direccion);
         var sucursal = new Sucursal { Nombre = request.Nombre.Trim(), Direccion = request.Direccion.Trim(), FechaAlta = DateTime.UtcNow };
         await _sucursales.CreateAsync(sucursal);
+        await _events.RecordAsync(PilotEventTypes.SucursalCreada, sucursal.Id);
         return sucursal;
     }
 
@@ -26,6 +29,7 @@ public class SucursalService
         var sucursal = await _sucursales.GetByIdAsync(id) ?? throw new DomainException("Sucursal no encontrada.");
         sucursal.Nombre = request.Nombre.Trim(); sucursal.Direccion = request.Direccion.Trim();
         await _sucursales.UpdateAsync(sucursal);
+        await _events.RecordAsync(PilotEventTypes.SucursalActualizada, sucursal.Id);
         return sucursal;
     }
 

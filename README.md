@@ -2,6 +2,8 @@
 
 Aplicación de gestión de gimnasios con autenticación, roles, alumnos, sucursales, pagos y notificaciones.
 
+La configuración operativa de logs, correlation IDs, health checks y eventos de uso está en [docs/OBSERVABILIDAD_PILOTO.md](docs/OBSERVABILIDAD_PILOTO.md).
+
 ## Estructura
 
 - `/frontend`: aplicación Flutter con Riverpod, compatible con Web.

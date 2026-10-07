@@ -16,12 +16,15 @@ namespace GymManager.API.Data
         public IMongoCollection<ConfiguracionGym> ConfiguracionesGym { get; }
         public IMongoCollection<CampaniaWhatsApp> CampaniasWhatsApp { get; }
         public IMongoCollection<EventoAuditoria> EventosAuditoria { get; }
+        public IMongoCollection<PilotEvent> PilotEvents { get; }
+        public IMongoDatabase Database { get; }
 
         public MongoDbContext(IOptions<MongoDbOptions> options)
         {
             var settings = options.Value;
             var client = new MongoClient(settings.ConnectionString);
             var database = client.GetDatabase(settings.DatabaseName);
+            Database = database;
 
             Usuarios = database.GetCollection<Usuario>(
                 settings.UsersCollectionName);
@@ -33,6 +36,7 @@ namespace GymManager.API.Data
             ConfiguracionesGym = database.GetCollection<ConfiguracionGym>("ConfiguracionesGym");
             CampaniasWhatsApp = database.GetCollection<CampaniaWhatsApp>("CampaniasWhatsApp");
             EventosAuditoria = database.GetCollection<EventoAuditoria>("EventosAuditoria");
+            PilotEvents = database.GetCollection<PilotEvent>("PilotEvents");
         }
     }
 }

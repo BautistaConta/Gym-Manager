@@ -93,5 +93,14 @@ public sealed class MongoIndexInitializer
                 Builders<CampaniaWhatsApp>.IndexKeys.Ascending(c => c.GymId).Ascending(c => c.Estado),
                 new CreateIndexOptions { Name = "ix_campanias_gym_estado" })
         }, cancellationToken);
+
+        await _context.PilotEvents.Indexes.CreateOneAsync(
+            new CreateIndexModel<PilotEvent>(
+                Builders<PilotEvent>.IndexKeys
+                    .Ascending(e => e.GymId)
+                    .Descending(e => e.FechaUtc)
+                    .Ascending(e => e.Tipo),
+                new CreateIndexOptions { Name = "ix_pilot_events_gym_fecha_tipo" }),
+            cancellationToken: cancellationToken);
     }
 }

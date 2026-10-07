@@ -12,9 +12,11 @@ public class AlumnoService
     private readonly CuotaCalculator _cuotas;
     private readonly BienvenidaWhatsAppService _bienvenidas;
     private readonly ILogger<AlumnoService> _logger;
+    private readonly IPilotEventRecorder _events;
 
     public AlumnoService(AlumnoRepository alumnos, PagoRepository pagos, SucursalRepository sucursales,
-        CuotaCalculator cuotas, BienvenidaWhatsAppService bienvenidas, ILogger<AlumnoService> logger)
+        CuotaCalculator cuotas, BienvenidaWhatsAppService bienvenidas, ILogger<AlumnoService> logger,
+        IPilotEventRecorder events)
     {
         _alumnos = alumnos;
         _pagos = pagos;
@@ -22,6 +24,7 @@ public class AlumnoService
         _cuotas = cuotas;
         _bienvenidas = bienvenidas;
         _logger = logger;
+        _events = events;
     }
 
     public async Task<List<AlumnoListadoResponse>> GetAllAsync()
@@ -76,6 +79,7 @@ public class AlumnoService
             MedioConsentimientoNotificaciones = request.NotificacionesHabilitadas ? request.MedioConsentimiento!.Trim() : null
         };
         await _alumnos.CreateAsync(alumno);
+        await _events.RecordAsync(PilotEventTypes.AlumnoCreado, alumno.Id);
         try
         {
             var welcome = await _bienvenidas.EncolarAsync(alumno);
@@ -96,11 +100,15 @@ public class AlumnoService
         Validate(request.Nombre, "0", request.Telefono);
         NotificacionService.ValidatePhone(request.Telefono);
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
+        var wasActive = alumno.Activo;
         alumno.Nombre = request.Nombre.Trim();
         alumno.Telefono = request.Telefono.Trim();
         alumno.Activo = request.Activo;
         alumno.SucursalPrincipalId = await ValidateSucursalPrincipalAsync(request.SucursalPrincipalId);
         await _alumnos.UpdateAsync(alumno);
+        await _events.RecordAsync(wasActive && !alumno.Activo
+            ? PilotEventTypes.AlumnoDesactivado
+            : PilotEventTypes.AlumnoActualizado, alumno.Id);
         return alumno;
     }
 
@@ -109,6 +117,7 @@ public class AlumnoService
         var alumno = await _alumnos.GetByIdAsync(id) ?? throw new DomainException("Alumno no encontrado.");
         alumno.Activo = false;
         await _alumnos.UpdateAsync(alumno);
+        await _events.RecordAsync(PilotEventTypes.AlumnoDesactivado, alumno.Id);
     }
 
     public async Task<Alumno> ActualizarNotificacionesAsync(string id, bool habilitadas, string? medioConsentimiento, bool consentimientoConfirmado)
@@ -120,6 +129,7 @@ public class AlumnoService
         alumno.FechaRevocacionWhatsApp = habilitadas ? null : _cuotas.AhoraUtc;
         alumno.MedioConsentimientoNotificaciones = habilitadas ? medioConsentimiento!.Trim() : null;
         await _alumnos.UpdateAsync(alumno);
+        await _events.RecordAsync(PilotEventTypes.AlumnoActualizado, alumno.Id);
         return alumno;
     }
 
