@@ -1,0 +1,50 @@
+name: Deploy Flutter Web to Cloudflare Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend-cloudflare.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter stable
+        shell: bash
+        run: |
+          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Build Flutter Web
+        working-directory: frontend
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        shell: bash
+        run: |
+          test -n "$API_BASE_URL"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "API_BASE_URL debe ser una URL HTTPS" >&2; exit 1 ;;
+          esac
+          flutter pub get
+          flutter build web --release --dart-define="API_BASE_URL=$API_BASE_URL"
+
+      - name: Publish Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/build/web --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main

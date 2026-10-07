@@ -20,6 +20,15 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var hostingPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(hostingPort))
+{
+    if (!int.TryParse(hostingPort, out var parsedPort) || parsedPort is < 1 or > 65535)
+        throw new InvalidOperationException("La variable PORT del hosting no es válida.");
+
+    builder.WebHost.UseUrls($"http://0.0.0.0:{parsedPort}");
+}
+
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options =>
 {

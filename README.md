@@ -1,5 +1,7 @@
 # Gym Manager
 
+La guía de despliegue económico del piloto (Cloudflare Pages + Railway Hobby + Atlas M0), variables, migración, bootstrap, rollback y backups está en [docs/DEPLOYMENT_PILOTO.md](docs/DEPLOYMENT_PILOTO.md).
+
 Aplicación de gestión de gimnasios con autenticación, roles, alumnos, sucursales, pagos y notificaciones.
 
 La configuración operativa de logs, correlation IDs, health checks y eventos de uso está en [docs/OBSERVABILIDAD_PILOTO.md](docs/OBSERVABILIDAD_PILOTO.md).

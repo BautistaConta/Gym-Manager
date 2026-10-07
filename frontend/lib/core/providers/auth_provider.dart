@@ -22,10 +22,15 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthService _authService = AuthService();
+  final AuthService _authService;
 
-  AuthNotifier() : super(AuthState(loading: true)) {
-    _init();
+  AuthNotifier({
+    AuthService? authService,
+    AuthState? initialState,
+    bool initialize = true,
+  }) : _authService = authService ?? AuthService(),
+       super(initialState ?? AuthState(loading: true)) {
+    if (initialize) _init();
   }
 
   Future<void> _init() async {

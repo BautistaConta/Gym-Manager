@@ -1,5 +1,10 @@
 class ApiConstants {
-  static const String baseUrl = "http://localhost:5211"; // backend local
+  // Producción debe compilarse con:
+  // --dart-define=API_BASE_URL=https://<backend>
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:5211',
+  );
 
   static const String login = "/api/auth/login";
   static const String me = "/api/users/me";
